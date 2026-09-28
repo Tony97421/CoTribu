@@ -79,6 +79,7 @@ async function openHousehold(h, role, memberId){
   S.tab = S.role === 'proche' ? 'proche' : (S.tab === 'proche' ? 'today' : S.tab);
   S.mode = 'app'; render();
   await loadAll(); subscribe();
+  if (typeof handleLaunch === 'function') handleLaunch();
 }
 async function boot(){
   const {data:{session}} = await sb.auth.getSession();

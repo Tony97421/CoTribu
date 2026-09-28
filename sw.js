@@ -1,12 +1,13 @@
 // CoTribu — service worker : cache hors ligne de l'app + réception des notifications.
 // Changer VERSION à chaque mise en ligne.
-const VERSION = 'cotribu-v15';
+const VERSION = 'cotribu-v16';
 const SHELL = [
   './', './index.html', './manifest.webmanifest', './css/app.css',
   './js/icons.js', './js/core.js', './js/store.js', './js/ui.js', './js/maison.js', './js/courses.js',
-  './js/planning.js', './js/extras.js', './js/accueil.js', './js/push.js', './js/proches.js', './js/premium.js', './js/ai.js', './js/points.js', './js/family.js', './js/guide.js', './js/moments.js',
+  './js/planning.js', './js/extras.js', './js/accueil.js', './js/push.js', './js/proches.js', './js/premium.js', './js/ai.js', './js/points.js', './js/family.js', './js/guide.js', './js/moments.js', './js/launch.js',
   './vendor/supabase-2.117.2.js',
   './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/favicon.png', './icons/badge.png',
+  './icons/shortcut-courses.png', './icons/shortcut-task.png', './icons/shortcut-event.png', './icons/shortcut-memory.png',
 ];
 
 self.addEventListener('install', e => {
@@ -15,12 +16,26 @@ self.addEventListener('install', e => {
 // L'app affiche « Nouvelle version disponible » ; un toucher envoie 'skip' pour l'activer.
 self.addEventListener('message', e => { if (e.data === 'skip') self.skipWaiting(); });
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== VERSION && k !== SHARE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
 
 // Réseau d'abord (toujours la dernière version), cache si hors ligne.
+// « Partager vers CoTribu » (Android) : on garde le contenu reçu, puis on ouvre l'app qui le propose.
+const SHARE = 'cotribu-share';
+async function receiveShare(req){
+  try {
+    const f = await req.formData(), c = await caches.open(SHARE);
+    for (const k of await c.keys()) await c.delete(k);
+    const files = f.getAll('photos').filter(x => x && typeof x !== 'string' && x.size).slice(0, 12);
+    for (let i = 0; i < files.length; i++) await c.put(`./__share/${i}`, new Response(files[i], {headers: {'content-type': files[i].type || 'image/jpeg'}}));
+    const meta = {title: f.get('title') || '', text: f.get('text') || '', url: f.get('url') || '', files: files.length, at: Date.now()};
+    await c.put('./__share/meta', new Response(JSON.stringify(meta), {headers: {'content-type': 'application/json'}}));
+  } catch (e) { console.warn('share', e); }
+  return Response.redirect(new URL('./?share=1', self.registration.scope).href, 303);
+}
 self.addEventListener('fetch', e => {
   const req = e.request, url = new URL(req.url);
+  if (req.method === 'POST' && url.origin === self.location.origin && url.pathname.endsWith('/share-target')) { e.respondWith(receiveShare(req)); return; }
   if (req.method !== 'GET' || url.origin !== self.location.origin) return;
   // « no-cache » : le navigateur revérifie toujours auprès du serveur (les mises à jour arrivent tout de suite)
   const net = req.mode === 'navigate' ? new Request(req.url, {cache: 'no-cache', credentials: 'same-origin'}) : new Request(req, {cache: 'no-cache'});
