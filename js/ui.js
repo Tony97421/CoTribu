@@ -18,6 +18,13 @@ const checkIc = () => icon('check', 16, 'stroke-width="3"');
 
 let toastT;
 function toast(msg){ const el = document.getElementById('toast'); el.textContent = msg; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(()=>el.hidden=true, msg.length > 90 ? 7000 : 2800); }
+// message avec bouton « Annuler » (5 secondes)
+let undoFn = null;
+function toastUndo(msg, fn){
+  const el = document.getElementById('toast'); undoFn = fn;
+  el.innerHTML = `<span>${esc(msg)}</span><button data-act="undo">Annuler</button>`; el.hidden = false;
+  clearTimeout(toastT); toastT = setTimeout(() => { el.hidden = true; undoFn = null; }, 5000);
+}
 
 function topbar(){
   if (S.role === 'proche') return `<div class="topbar"><span class="wordmark"><span class="name">Co<b>Tribu</b></span><span class="tagline">Le quotidien se partage</span></span><div class="people">${S.me ? avatar(S.me) : ''}</div></div>`;
@@ -91,6 +98,7 @@ const backBtn = label => `<button class="back" data-act="back">${icon('chevron-l
 Object.assign(H, {
   tab: el => { S.tab = el.dataset.v; S.armed = null; S.roomOpen = null; S.aisleOpen = null; if (S.tab !== 'plus') S.sub.plus = null; render(); window.scrollTo(0,0); },
   close: () => closeSheet(),
+  undo: () => { const f = undoFn; undoFn = null; document.getElementById('toast').hidden = true; if (f) f(); },
   back: () => back(),
   retry: () => { S.mode = 'loading'; S.errMsg = null; render(); safeBoot(); },
   me: el => setMe(el.dataset.id),

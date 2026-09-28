@@ -18,6 +18,7 @@ function itemRow(i, opts={}){
     ${opts.noIcon ? '' : `<span class="aisle-ic">${icon(a.icon,18)}</span>`}
     <div class="body" data-act="editItem" data-id="${i.id}" role="button" tabindex="0"><span class="name">${esc(i.name)}</span>${i.qty||i.done?`<span class="meta">${esc(i.qty||'')}${i.done&&i.doneBy&&S.members.has(i.doneBy)?`${i.qty?' · ':''}pris par ${esc(nameOf(i.doneBy))}`:''}</span>`:''}</div>
     ${i.addedBy && S.members.has(i.addedBy) ? avatar(i.addedBy) : ''}
+    <button class="del" data-act="itemDel" data-id="${i.id}" aria-label="Supprimer ${esc(i.name)}">${icon('trash-2',18)}</button>
   </div>`;
 }
 function addBar(){
@@ -100,7 +101,7 @@ function coursesHistory(){
   hist.forEach(i => { const d = (i.doneAt||'').slice(0,10) || 'autre'; (byDay[d] = byDay[d] || []).push(i); });
   return Object.entries(byDay).map(([d, list]) => `<section class="group"><div class="ghead" style="background:var(--shop-soft)"><h3>${d==='autre'?'Plus ancien':esc(cap(fmt(d,{weekday:'long',day:'numeric',month:'long'})))}</h3><span class="pill num">${list.length}</span></div>
     ${list.map(i => { const a = aisleOf(i.aisle); const again = onList(i.name); return `<div class="task u-${a.tone}"><span class="aisle-ic">${icon(a.icon,18)}</span><div class="body"><span class="name">${esc(i.name)}</span>${i.qty?`<span class="meta">${esc(i.qty)}</span>`:''}</div>
-      <button class="cart ${again?'on':''}" data-act="rebuy" data-id="${i.id}" aria-label="Racheter">${icon(again?'check':'rotate-ccw',18)}</button></div>`; }).join('')}</section>`).join('');
+      <button class="cart ${again?'on':''}" data-act="rebuy" data-id="${i.id}" aria-label="Racheter">${icon(again?'check':'rotate-ccw',18)}</button><button class="del" data-act="itemDel" data-id="${i.id}" aria-label="Supprimer de l’historique">${icon('trash-2',18)}</button></div>`; }).join('')}</section>`).join('');
 }
 
 function addItemFromText(text, aisle){
@@ -156,6 +157,11 @@ Object.assign(H, {
   openAisle: el => goSub(() => { S.aisleOpen = el.dataset.id; }),
   editItem: el => { const i = S.items.get(el.dataset.id); if (!i) return; S.draft = clone(i); openSheet('item'); },
   saveItem: () => { const d = S.draft; if (!d.name.trim()) { toast('Écris le nom de l’article.'); return; } d.name = d.name.trim(); put('items', d); closeSheet(); render(); },
+  itemDel: el => {
+    const it = S.items.get(el.dataset.id); if (!it) return;
+    del('items', it.id); render();
+    toastUndo(`« ${it.name} » supprimé`, () => { put('items', it); render(); });
+  },
   delItem: () => { if (S.armed !== 'item') { S.armed = 'item'; renderSheet(); return; } del('items', S.draft.id); closeSheet(); render(); },
   addIngr: el => { if (addIngredient({name:el.dataset.name, qty:el.dataset.qty, aisle:el.dataset.aisle})) { render(); toast(el.dataset.name + ' ajouté'); } },
   addMealIngr: el => { const m = S.meals.get(el.dataset.id); if (!m) return; let n = 0; (m.ingredients||[]).forEach(g => { if (addIngredient(g)) n++; }); render(); toast(n ? `${n} ingrédients ajoutés` : 'Tout est déjà dans la liste'); },
