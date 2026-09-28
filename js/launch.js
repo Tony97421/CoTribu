@@ -29,21 +29,43 @@ async function receiveShared(){
   if (!meta || (!meta.text && !meta.title && !meta.url && !files.length)) { toast('Rien n’a été reçu. Réessaie de partager.'); return; }
   const text = [meta.text, meta.url && !(meta.text||'').includes(meta.url) ? meta.url : ''].filter(Boolean).join('\n').trim();
   const cands = shareCandidates(text);
-  S.shared = {title: (meta.title||'').trim(), text, files, cands, pick: cands.map(() => true), thumbs: files.map(f => URL.createObjectURL(f))};
+  const sh = S.shared = {title: (meta.title||'').trim(), text, files, cands, pick: cands.map(c => !isStaple(c)), thumbs: files.map(f => URL.createObjectURL(f))};
+  const link = meta.url || ((text.match(/https?:\/\/\S+/) || [])[0]) || '';
+  if (link && !files.length) { sh.loading = true; fetchRecipe(sh, link); }
   openSheet('shared');
+}
+// sel, poivre, eau : on les a déjà, décochés par défaut
+function isStaple(c){ const n = norm(parseItem(c).name); return /^(sel|poivre|eau|sel et poivre|sel poivre)( |$)/.test(n) && n.split(' ').length <= 3; }
+async function fetchRecipe(sh, link){
+  try {
+    const call = sb.functions.invoke('cotribu-recipe', {body:{url: link}});
+    const {data, error} = await Promise.race([call, new Promise(ok => setTimeout(() => ok({error:{message:'timeout'}}), 15000))]);
+    if (error) throw error;
+    if (data && data.recipe && data.recipe.ingredients.length) {
+      const r = data.recipe;
+      sh.recipe = r; sh.title = r.name || sh.title;
+      sh.cands = r.ingredients; sh.pick = r.ingredients.map(c => !isStaple(c));
+    } else sh.recipeFail = (data && data.error) || 'pas_de_recette';
+  } catch(e) { console.warn('recette', e); sh.recipeFail = 'indispo'; }
+  sh.loading = false;
+  if (S.sheet === 'shared' && S.shared === sh) renderSheet();
 }
 
 // « prends du lait, des couches et du pain stp » → Lait, Couches, Pain
 const FILLER = /^(stp|svp|merci|hello|salut|coucou|bonjour|hey|ok|tu peux|peux-tu|peux tu|pourrais-tu|pense à|pense a|penses à|penses a|n['’]oublie pas|oublie pas|il faut|faut|il manque|il nous faut|on a besoin de|besoin de|on n['’]a plus de|plus de|prends|prend|prendre|achète|achete|acheter|ramène|ramene|ramener|récupère|recupere|reprends|et)(?=\s|$|[:,!])[\s:,!]*/i;
 const ARTICLE = /^(du|de la|de l['’]|des|le|la|les|l['’]|un|une|d['’])\s*/i;
 function shareCandidates(text){
-  const s = String(text||'').replace(/https?:\/\/\S+/g, ' ');
+  const QTY = /^((\d+(?:[.,/]\d+)?\s?[½¼¾]?|[½¼¾])\s?(kg|mg|g|l|dl|cl|ml|x|pinc[ée]es?|cuill[eè]res?( [àa] (soupe|caf[ée]))?|c\.? ?[àa] ?[sc]\.?|gousses?|verres?|tranches?|sachets?|pots?|bo[iî]tes?|feuilles?|brins?)?)$/i;
+  // « 250 g » seul sur une ligne, puis « de farine » à la ligne suivante (copier-coller d'une recette)
+  const lines = String(text||'').replace(/https?:\/\/\S+/g, ' ').split('\n').map(l => l.trim()).filter(Boolean), joined = [];
+  for (let i = 0; i < lines.length; i++) { if (QTY.test(lines[i]) && lines[i+1]) { joined.push(lines[i] + ' ' + lines[i+1]); i++; } else joined.push(lines[i]); }
+  const s = joined.join('\n');
   const out = [], seen = new Set();
   for (let part of s.split(/\n|,|;|•|·|\s+et\s+|\s+\+\s+|\s+puis\s+/i)) {
     part = part.replace(/^[\s\-–—*•·✓✔☐▪>]+/, '').replace(/[\s!.?…)]+$/, '').replace(/\s+(stp|svp|merci)$/i, '').trim();
     let prev; do { prev = part; part = part.replace(FILLER, '').trim(); } while (part !== prev);
     if (!/^\d/.test(part)) part = part.replace(ARTICLE, '').trim();
-    if (part.length < 2 || part.length > 40 || part.split(/\s+/).length > 5) continue;
+    if (part.length < 2 || part.length > 50 || part.split(/\s+/).length > 7) continue;
     const k = norm(part); if (seen.has(k)) continue; seen.add(k);
     out.push(part);
   }
@@ -61,8 +83,11 @@ SHEETS.shared = () => {
   let h = `<h2>Reçu dans CoTribu</h2>`;
   if (sh.thumbs.length) h += `<div class="uploads">${sh.thumbs.map(u => `<span class="ph"><img src="${esc(u)}" alt=""></span>`).join('')}</div>
     <button class="btn primary" data-act="shareMemory">${icon('heart',18)}En faire un souvenir</button>`;
-  if (sh.text) h += `<div class="sharequote">${esc(sh.text.length > 400 ? sh.text.slice(0,400) + '…' : sh.text)}</div>`;
-  if (sh.cands.length) h += `<div class="sect"><span class="eyebrow">Pour les courses, touche pour retirer</span><div class="chips u-shop">${sh.cands.map((c,i) => `<button class="chip" data-act="shareTog" data-i="${i}" aria-pressed="${sh.pick[i]}">${esc(cap(c))}</button>`).join('')}</div></div>
+  if (sh.loading) h += `<div class="row muted small"><span class="spin"></span>Lecture de la recette…</div>`;
+  if (sh.recipe) h += `<div class="ucard u-shop"><span class="kicker">Recette</span><strong>${esc(sh.recipe.name || 'Recette')}</strong><span class="muted small">${sh.recipe.ingredients.length} ingrédients${sh.recipe.servings ? ' · ' + esc(sh.recipe.servings) : ''}</span></div>`;
+  else if (sh.recipeFail && !sh.loading) h += `<div class="info">${sh.recipeFail === 'indispo' ? 'La lecture des recettes n’est pas encore activée.' : 'Je n’ai pas trouvé les ingrédients sur cette page.'} Astuce : sur la recette, sélectionne la liste des ingrédients, puis Partager → CoTribu.</div>`;
+  if (sh.text && !sh.recipe) h += `<div class="sharequote">${esc(sh.text.length > 400 ? sh.text.slice(0,400) + '…' : sh.text)}</div>`;
+  if (sh.cands.length) h += `<div class="sect"><span class="eyebrow">${sh.recipe ? 'Ingrédients' : 'Pour les courses'}, touche pour retirer</span><div class="chips u-shop">${sh.cands.map((c,i) => `<button class="chip" data-act="shareTog" data-i="${i}" aria-pressed="${sh.pick[i]}">${esc(cap(c))}</button>`).join('')}</div></div>
     <button class="btn ${sh.thumbs.length ? 'soft' : 'primary'}" data-act="shareItems" ${n ? '' : 'disabled'}>${icon('shopping-cart',18)}Ajouter ${n} article${n>1?'s':''} aux courses</button>`;
   if (sh.text || sh.title) h += `<div class="menu">
     ${[['shareTask','circle-check','En faire une tâche','u-home'],['shareEvent','calendar','En faire un événement','u-plan'],['shareMeal','utensils','En faire un repas','u-shop']]

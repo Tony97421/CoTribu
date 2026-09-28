@@ -439,3 +439,10 @@ label.f input,label.f select,label.f textarea{font-weight:400;color:var(--ink)}
 .confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:70}
 @media (prefers-reduced-motion: reduce){.sl-img.on{animation:none}.sl-img{transition:none}}
 .sharequote{background:var(--surface2);border-left:3px solid var(--accent);border-radius:10px;padding:10px 12px;white-space:pre-wrap;font-size:14px;max-height:160px;overflow:auto;color:var(--muted)}
+.spin{width:16px;height:16px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--accent);animation:spin .8s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.grip{display:grid;place-items:center;width:32px;height:40px;margin-right:-6px;color:var(--faint);touch-action:none;cursor:grab;flex:none}
+.dragging{position:relative;z-index:15;background:var(--surface);box-shadow:0 10px 28px rgba(0,0,0,.18);border-radius:14px;transition:none!important}
+.dragging .grip{color:var(--accent);cursor:grabbing}
+body.is-dragging{user-select:none;-webkit-user-select:none;cursor:grabbing}
+.linkbtn{border:0;background:none;padding:0;color:var(--accent-text);font:inherit;font-weight:700;text-decoration:underline;cursor:pointer}

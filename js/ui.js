@@ -47,6 +47,7 @@ function seg(name, cur, options, uni){
 
 /* ---------- rendu ---------- */
 function render(){
+  if (S.dragging) { S.dragPending = true; return; } // pas de redessin pendant un glisser-déposer
   const tabs = document.querySelector('.tabs');
   tabs.hidden = S.mode !== 'app' || S.role === 'proche';
   tabs.querySelectorAll('button').forEach(b => b.setAttribute('aria-current', b.dataset.v === S.tab ? 'page' : 'false'));

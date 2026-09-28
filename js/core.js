@@ -272,6 +272,13 @@ const AISLES = [
   {id:'animaux',  name:'Animaux',           icon:'paw-print',   tone:'warm',  kw:'croquette litière litiere pâtée patee friandise-chien friandise-chat'},
   {id:'autre',    name:'Autre',             icon:'package',     tone:'neutral', kw:''},
 ];
+function aisleOrder(){
+  if (typeof S === 'undefined' || !S.members) return null;
+  let best = null; for (const m of S.members.values()) if (m.aisleOrder && Array.isArray(m.aisleOrder.ids) && (!best || String(m.aisleOrder.at||'') > String(best.at||''))) best = m.aisleOrder;
+  return best && best.ids.length ? best.ids : null;
+}
+function aislesSorted(){ const o = aisleOrder(); if (!o) return AISLES; const pos = id => { const i = o.indexOf(id); return i < 0 ? 999 : i; }; return [...AISLES].sort((a,b) => pos(a.id) - pos(b.id)); }
+const itemKey = i => i.order != null ? i.order : 1e6 + (Date.parse(i.addedAt||'') || 0) / 1e9;
 const aisleOf = id => AISLES.find(a => a.id === id) || AISLES[AISLES.length-1];
 const norm = s => String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
 // Classement appris : si la famille a déjà rangé ce produit (même corrigé à la main), on reprend son rayon

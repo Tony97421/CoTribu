@@ -3,7 +3,7 @@
 function parseItem(text){
   let t = String(text||'').trim().replace(/\s+/g,' ');
   let qty = '';
-  let m = t.match(/^(\d+[.,]?\d*\s?(kg|g|l|cl|ml|x|boîtes?|boites?|paquets?|bouteilles?|briques?|pots?|sachets?|tranches?)?)\s+(de\s+|d[’'])?(.+)$/i);
+  let m = t.match(/^((?:\d+(?:[.,/]\d+)?\s?[½¼¾]?|[½¼¾])\s?(kg|mg|g|l|dl|cl|ml|x|bo[iî]tes?|paquets?|bouteilles?|briques?|pots?|sachets?|tranches?|pinc[ée]es?|cuill[eè]res?(?:\s+[àa]\s+(?:soupe|caf[ée]))?|c\.?\s?[àa]\s?[sc]\.?|cs|cc|gousses?|verres?|feuilles?|brins?|bottes?|filets?|noix|zestes?|morceaux?|cubes?|tasses?|poign[ée]es?|rouleaux?|barquettes?|boules?)?)\s+(de\s+|d[’'])?(.+)$/i);
   if (m) { qty = m[1].trim(); t = m[4]; }
   else if ((m = t.match(/^(.+?)\s+(x\s?\d+|\d+[.,]?\d*\s?(kg|g|l|cl|ml))$/i))) { t = m[1]; qty = m[2].trim(); }
   return {name: cap(t), qty};
@@ -13,12 +13,13 @@ const onList = name => activeItems().some(i => !i.done && norm(i.name) === norm(
 
 function itemRow(i, opts={}){
   const a = aisleOf(i.aisle);
-  return `<div class="task ${i.done?'done':''} u-${a.tone}">
+  return `<div class="task ${i.done?'done':''} u-${a.tone}" data-sid="${i.id}">
     <button class="check" data-act="itemToggle" data-id="${i.id}" aria-pressed="${!!i.done}" aria-label="${i.done?'Décocher':'Cocher'} ${esc(i.name)}">${checkIc()}</button>
     ${opts.noIcon ? '' : `<span class="aisle-ic">${icon(a.icon,18)}</span>`}
     <div class="body" data-act="editItem" data-id="${i.id}" role="button" tabindex="0"><span class="name">${esc(i.name)}</span>${i.qty||i.done?`<span class="meta">${esc(i.qty||'')}${i.done&&i.doneBy&&S.members.has(i.doneBy)?`${i.qty?' · ':''}pris par ${esc(nameOf(i.doneBy))}`:''}</span>`:''}</div>
     ${i.addedBy && S.members.has(i.addedBy) ? avatar(i.addedBy) : ''}
     <button class="del" data-act="itemDel" data-id="${i.id}" aria-label="Supprimer ${esc(i.name)}">${icon('trash-2',18)}</button>
+    ${opts.grip ? `<span class="grip" data-grip aria-label="Glisser pour déplacer">${icon('grip-vertical',20)}</span>` : ''}
   </div>`;
 }
 function addBar(){
@@ -40,21 +41,22 @@ function coursesList(){
   const items = activeItems();
   let h = addBar();
   if (!items.length) return h + `<div class="empty"><h3>La liste est vide</h3><span class="muted">Ajoute un article : il est rangé tout seul dans son rayon, et toute la famille le voit.</span></div>`;
-  for (const a of AISLES){
-    const list = items.filter(i => (i.aisle||'autre') === a.id).sort((x,y) => (x.done - y.done) || String(x.addedAt||'').localeCompare(String(y.addedAt||'')));
+  for (const a of aislesSorted()){
+    const list = items.filter(i => (i.aisle||'autre') === a.id).sort((x,y) => (x.done - y.done) || itemKey(x) - itemKey(y));
     if (!list.length) continue;
     const closed = S.closedAisles && S.closedAisles[a.id];
-    h += `<section class="group u-${a.tone}"><div class="ghead" style="background:var(--u-soft)"><span class="bubble sm">${icon(a.icon,16)}</span><h3>${esc(a.name)}</h3>
+    h += `<section class="group u-${a.tone}" data-sort="items" data-aisle="${a.id}"><div class="ghead" style="background:var(--u-soft)"><span class="bubble sm">${icon(a.icon,16)}</span><h3>${esc(a.name)}</h3>
       <span class="pill num">${list.filter(i=>!i.done).length}</span><button class="iconbtn" style="background:none" data-act="foldAisle" data-v="${a.id}" aria-label="${closed?'Déplier':'Replier'}">${icon(closed?'chevron-down':'chevron-up',20)}</button></div>
-      ${closed ? '' : list.map(i => itemRow(i, {noIcon:true})).join('')}</section>`;
+      ${closed ? '' : list.map(i => itemRow(i, {noIcon:true, grip:true})).join('')}</section>`;
   }
   const bought = items.filter(i => i.done).length;
   if (bought) h += `<button class="btn soft block" data-act="clearBought">${icon('check',18)}Ranger les ${bought} articles achetés</button>`;
+  h += `<span class="info">Maintiens la poignée ⠿ et fais glisser un article pour changer son ordre ou son rayon. <button class="linkbtn" data-act="aisleOrderOpen">Changer l’ordre des rayons</button></span>`;
   return h;
 }
 function coursesAisles(){
   const items = activeItems();
-  return `<div class="tiles">${AISLES.map(a => {
+  return `<button class="btn soft sm" data-act="aisleOrderOpen">${icon('grip-vertical',16)}Changer l’ordre des rayons</button><div class="tiles">${aislesSorted().map(a => {
     const list = items.filter(i => (i.aisle||'autre') === a.id);
     const left = list.filter(i => !i.done).length, done = list.length - left;
     return `<button class="tile u-${a.tone}" data-act="openAisle" data-id="${a.id}"><span class="art">${icon(a.icon,46)}</span>
@@ -64,9 +66,9 @@ function coursesAisles(){
 }
 function coursesAisle(id){
   const a = aisleOf(id);
-  const list = activeItems().filter(i => (i.aisle||'autre') === id).sort((x,y)=>(x.done-y.done));
+  const list = activeItems().filter(i => (i.aisle||'autre') === id).sort((x,y)=>(x.done-y.done) || itemKey(x) - itemKey(y));
   return `${backBtn('Rayons')}<div class="row u-${a.tone}"><span class="bubble">${icon(a.icon,20)}</span><h2>${esc(a.name)}</h2></div>
-    <section class="group">${list.map(i => itemRow(i,{noIcon:true})).join('') || '<div class="task"><span class="muted">Rien à acheter dans ce rayon.</span></div>'}</section>` + addBar();
+    <section class="group" data-sort="items" data-aisle="${id}">${list.map(i => itemRow(i,{noIcon:true, grip:true})).join('') || '<div class="task"><span class="muted">Rien à acheter dans ce rayon.</span></div>'}</section>` + addBar();
 }
 function weekMeals(){
   const today = localToday();
@@ -85,7 +87,7 @@ function coursesRecipes(){
       <strong>${esc(m.name)}</strong><span class="muted small">${(m.ingredients||[]).length} ingrédients</span>
       <button class="btn upri sm u-shop" data-act="addMealIngr" data-id="${m.id}">${icon('plus',16)}Ajouter</button></div>`).join('')}</div>`;
   h += `<h3>Ingrédients manquants (${need.length})</h3>`;
-  for (const a of AISLES){
+  for (const a of aislesSorted()){
     const list = missing.filter(g => g.aisle === a.id); if (!list.length) continue;
     h += `<section class="group u-${a.tone}"><div class="ghead" style="background:var(--u-soft)"><span class="bubble sm">${icon(a.icon,16)}</span><h3>${esc(a.name)}</h3></div>
       ${list.map(g => { const has = onList(g.name); return `<div class="task ${has?'done':''}"><span class="aisle-ic">${icon(a.icon,18)}</span><div class="body"><span class="name">${esc(g.name)}</span><span class="meta">${esc(g.qty||'')}${g.qty?' · ':''}${esc(g.meal.name)}</span></div>
