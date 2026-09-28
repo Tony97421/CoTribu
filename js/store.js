@@ -7,8 +7,13 @@ S.hh = null;        // foyer courant {id, name, invite_code}
 S.live = false;     // canal temps réel connecté
 S.busy = false;
 S.welcomeMode = 'create';
-S.joinCode = (new URLSearchParams(location.search).get('code') || '').toUpperCase().slice(0,6);
+const QS = new URLSearchParams(location.search);
+S.joinCode = (QS.get('code') || '').toUpperCase().slice(0,6);
+S.procheCode = (QS.get('proche') || '').toUpperCase().slice(0,6);
 if (S.joinCode) S.welcomeMode = 'join';
+if (S.procheCode) S.welcomeMode = 'proche';
+S.role = 'member';
+const HH_COLS = 'id,name,invite_code,proche_code,premium_until,premium_source';
 let channel = null;
 
 const queues = new Map();
@@ -29,7 +34,7 @@ function onWriteError(err){
 const row = (col, obj) => ({household_id:S.hh.id, col, id:obj.id, data:obj, updated_at:new Date().toISOString()});
 function put(col, obj){
   S[col].set(obj.id, obj);
-  enqueue(col+'/'+obj.id, () => sb.from('docs').upsert(row(col,obj)));
+  return enqueue(col+'/'+obj.id, () => sb.from('docs').upsert(row(col,obj)));
 }
 function putMany(col, list){
   list.forEach(o => S[col].set(o.id, o));
@@ -51,7 +56,7 @@ async function loadAll(){
   const next = {}; COLS.forEach(c => next[c] = new Map());
   data.forEach(r => { if (next[r.col]) next[r.col].set(r.id, {...r.data, id:r.id}); });
   Object.assign(S, next);
-  const h = await sb.from('households').select('id,name,invite_code').eq('id', S.hh.id).maybeSingle();
+  const h = await sb.from('households').select(HH_COLS).eq('id', S.hh.id).maybeSingle();
   if (h.data) { S.hh = h.data; S.meta = {name:h.data.name}; }
   S.loaded = true;
   render();
@@ -66,23 +71,25 @@ function subscribe(){
     })
     .subscribe(status => { S.live = status === 'SUBSCRIBED'; renderHeaderStatus(); });
 }
-async function openHousehold(h){
+async function openHousehold(h, role, memberId){
   S.hh = h; S.meta = {name:h.name}; S.loaded = false;
+  S.role = role || 'member';
   LS.set('cotribu-hh', h.id);
-  const memberKey = 'cotribu-me-'+h.id; S.me = LS.get(memberKey);
+  const memberKey = 'cotribu-me-'+h.id; S.me = S.role === 'proche' ? memberId : LS.get(memberKey);
+  S.tab = S.role === 'proche' ? 'proche' : (S.tab === 'proche' ? 'today' : S.tab);
   S.mode = 'app'; render();
   await loadAll(); subscribe();
 }
 async function boot(){
   const {data:{session}} = await sb.auth.getSession();
   if (!session) { S.mode = 'welcome'; render(); return; }
-  const {data, error} = await sb.from('household_users').select('household_id, member_id, households(id,name,invite_code)');
+  const {data, error} = await sb.from('household_users').select(`household_id, member_id, role, households(${HH_COLS})`).eq('user_id', session.user.id);
   if (error) { console.warn(error); S.errMsg = error.message; S.mode = 'error'; render(); return; }
   if (!data.length) { S.mode = 'welcome'; render(); return; }
   const last = LS.get('cotribu-hh');
   const pick = data.find(d => d.household_id === last) || data[0];
-  if (pick.member_id && !LS.get('cotribu-me-'+pick.household_id)) LS.set('cotribu-me-'+pick.household_id, pick.member_id);
-  openHousehold(pick.households);
+  if (pick.role !== 'proche' && pick.member_id && !LS.get('cotribu-me-'+pick.household_id)) LS.set('cotribu-me-'+pick.household_id, pick.member_id);
+  openHousehold(pick.households, pick.role, pick.member_id);
 }
 async function ensureSession(){
   const {data:{session}} = await sb.auth.getSession();
@@ -93,6 +100,12 @@ async function ensureSession(){
 function explain(err){
   const m = (err && (err.message || err.msg) || '').toLowerCase();
   if (m.includes('code_invalide')) return 'Code introuvable. Vérifie les 6 caractères.';
+  if (m.includes('code_cadeau_invalide')) return 'Ce code cadeau n’existe pas.';
+  if (m.includes('code_cadeau_epuise')) return 'Ce code cadeau a déjà été utilisé.';
+  if (m.includes('code_cadeau_deja_utilise')) return 'Ton foyer a déjà utilisé ce code.';
+  if (m.includes('deja_pris')) return 'Quelqu’un a déjà accepté cette demande.';
+  if (m.includes('demande_annulee')) return 'Cette demande a été annulée par la famille.';
+  if (m.includes('nom_manquant')) return 'Écris ton prénom (ou comment la famille t’appelle).';
   if (m.includes('anonymous')) return 'Connexion désactivée : active « Allow anonymous sign-ins » dans Supabase.';
   if (m.includes('docs_col_check') || m.includes('check constraint')) return 'La base n’est pas à jour : lance migration-2.sql dans Supabase.';
   if (m.includes('bucket')) return 'Le stockage des photos n’est pas prêt : lance migration-2.sql dans Supabase.';
@@ -109,7 +122,12 @@ async function createHousehold(){
     const {data:h, error} = await sb.rpc('create_household', {p_name:(S.wHome||'').trim() || 'Notre maison'});
     if (error) throw error;
     S.hh = h;
-    const tpl = buildTemplate(names, localToday());
+    let tpl = buildTemplate(names, localToday());
+    if ((S.wDesc||'').trim() && typeof aiSetupTemplate === 'function') {
+      toast('L’IA prépare votre maison…');
+      try { const t2 = await aiSetupTemplate(h.id, tpl.members, S.wDesc.trim()); if (t2) tpl = t2; }
+      catch(e) { console.warn(e); toast('L’IA n’a pas pu répondre : modèle standard chargé.'); }
+    }
     const rows = [...tpl.members.map(o=>row('members',o)), ...tpl.rooms.map(o=>row('rooms',o)), ...tpl.tasks.map(o=>row('tasks',o))];
     const up = await sb.from('docs').upsert(rows); if (up.error) throw up.error;
     LS.set('cotribu-me-'+h.id, tpl.members[0].id);
@@ -117,6 +135,23 @@ async function createHousehold(){
     S.busy = false; S.tab = 'today';
     await openHousehold(h);
     toast('Foyer créé. Invite ta famille : Plus → Foyer.');
+  } catch(e) { S.busy = false; render(); toast(explain(e)); }
+}
+async function joinAsProche(){
+  const code = (S.procheCode||'').trim().toUpperCase(), name = (S.procheName||'').trim();
+  if (code.length < 6) { toast('Le code fait 6 caractères.'); return; }
+  if (!name) { toast('Écris ton prénom (ou comment la famille t’appelle).'); return; }
+  S.busy = true; render();
+  try {
+    await ensureSession();
+    const {data:h, error} = await sb.rpc('join_as_proche', {p_code:code, p_name:name});
+    if (error) throw error;
+    history.replaceState(null, '', location.pathname);
+    const u = (await sb.auth.getUser()).data.user;
+    const {data:hu} = await sb.from('household_users').select('role, member_id').eq('household_id', h.id).eq('user_id', u.id).maybeSingle();
+    S.busy = false;
+    await openHousehold(h, hu ? hu.role : 'proche', hu ? hu.member_id : null);
+    toast('Bienvenue ! Tu es maintenant proche de « ' + h.name + ' »');
   } catch(e) { S.busy = false; render(); toast(explain(e)); }
 }
 async function joinHousehold(){
@@ -129,7 +164,9 @@ async function joinHousehold(){
     if (error) throw error;
     history.replaceState(null, '', location.pathname);
     S.busy = false; S.tab = 'today';
-    await openHousehold(h);
+    const u = (await sb.auth.getUser()).data.user;
+    const {data:hu} = await sb.from('household_users').select('role, member_id').eq('household_id', h.id).eq('user_id', u.id).maybeSingle();
+    await openHousehold(h, hu ? hu.role : 'member', hu ? hu.member_id : null);
     toast('Bienvenue dans « ' + h.name + ' »');
   } catch(e) { S.busy = false; render(); toast(explain(e)); }
 }
@@ -152,7 +189,20 @@ const isStandalone = () => matchMedia('(display-mode: standalone)').matches || n
 const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; render(); });
 window.addEventListener('appinstalled', () => { installEvt = null; toast('CoTribu est installée'); render(); });
-if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
+/* ---------- mises à jour de l'app ---------- */
+let swWaiting = null, swReloading = false;
+function showUpdate(w){ swWaiting = w; const el = document.getElementById('update'); if (el) el.hidden = false; }
+function applyUpdate(){ const el = document.getElementById('update'); if (el) el.querySelector('button').textContent = 'Mise à jour…'; if (swWaiting) swWaiting.postMessage('skip'); else location.reload(); }
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (swReloading) return; swReloading = true; location.reload(); });
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').then(reg => {
+    if (reg.waiting && navigator.serviceWorker.controller) showUpdate(reg.waiting);
+    reg.addEventListener('updatefound', () => { const w = reg.installing; if (!w) return; w.addEventListener('statechange', () => { if (w.state === 'installed' && navigator.serviceWorker.controller) showUpdate(w); }); });
+    const check = () => reg.update().catch(()=>{});
+    setInterval(check, 30 * 60 * 1000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
+  }).catch(()=>{}));
+}
 const shareSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
 function installCard(compact){
   if (isStandalone()) return '';

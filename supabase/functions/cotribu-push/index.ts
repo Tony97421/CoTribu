@@ -84,6 +84,7 @@ function localNow(tz) {
     .formatToParts(new Date()).map((x) => [x.type, x.value]));
   return { date: `${p.year}-${p.month}-${p.day}`, min: +p.hour * 60 + +p.minute };
 }
+const frDate = (ds) => new Intl.DateTimeFormat("fr-FR", { timeZone: "UTC", weekday: "long", day: "numeric", month: "long" }).format(new Date(idx(ds) * DAY));
 const toMin = (t) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
 
 /* ---------- envoi ---------- */
@@ -100,26 +101,33 @@ async function once(key) { // vrai si pas encore envoyé
   return !error;
 }
 async function loadHouseholds(ids) {
-  const { data } = await db.from("docs").select("household_id,col,id,data").in("household_id", ids).in("col", ["members", "rooms", "tasks", "events"]);
+  const { data } = await db.from("docs").select("household_id,col,id,data").in("household_id", ids).in("col", ["members", "rooms", "tasks", "events", "proches", "requests"]);
   const H = {};
   for (const r of data || []) {
-    const h = H[r.household_id] ||= { members: new Map(), rooms: new Map(), tasks: new Map(), events: new Map() };
+    const h = H[r.household_id] ||= { members: new Map(), rooms: new Map(), tasks: new Map(), events: new Map(), proches: new Map(), requests: new Map() };
     h[r.col].set(r.id, { ...r.data, id: r.id });
   }
   return H;
 }
 
+// un événement concerne-t-il cette personne ? (proche : seulement si invité ; famille : si concerné ou si personne n'est précisé)
+function concerns(e, id) {
+  if (id.startsWith("p-")) return (e.proches || []).includes(id);
+  return !(e.members || []).length || e.members.includes(id);
+}
+const personName = (h, id) => ((h.members.get(id) || h.proches.get(id) || {}).name || "");
+
 function morningMessage(h, memberId, today) {
-  const name = (h.members.get(memberId) || {}).name || "";
+  const name = personName(h, memberId);
   const tasks = [];
-  for (const t of h.tasks.values()) {
+  for (const t of (memberId.startsWith("p-") ? [] : h.tasks.values())) {
     if (!h.rooms.has(t.roomId) || !dueToday(t, today)) continue;
     const a = assigneesOn(t, today, h.members);
     if (a.length && !a.includes(memberId)) continue;
     if (!a.length) continue; // « qui veut » : pas de rappel individuel
     tasks.push(t.name + (t.time && t.time.at ? ` (${t.time.mode === "before" ? "avant " : ""}${hm(t.time.at)})` : ""));
   }
-  const evs = [...h.events.values()].filter((e) => eventOn(e, today) && (!(e.members || []).length || e.members.includes(memberId)))
+  const evs = [...h.events.values()].filter((e) => eventOn(e, today) && concerns(e, memberId))
     .sort((a, b) => (a.start || "").localeCompare(b.start || ""))
     .map((e) => (e.start && !e.allDay ? `${hm(e.start)} ${e.title}` : e.title));
   if (!tasks.length && !evs.length) return null;
@@ -148,7 +156,7 @@ async function tick() {
     // 1 h avant chaque événement
     for (const e of h.events.values()) {
       if (e.allDay || !e.start || !eventOn(e, now.date)) continue;
-      if ((e.members || []).length && !e.members.includes(s.member_id)) continue;
+      if (!concerns(e, s.member_id)) continue;
       const delta = toMin(e.start) - now.min;
       if (delta > 0 && delta <= 65) {
         if (await once(`e:${s.endpoint}:${e.id}:${now.date}`)) {
@@ -174,6 +182,34 @@ Deno.serve(async (req) => {
     const { data: subs } = await db.from("push_subs").select("*").eq("user_id", u.user.id);
     let sent = 0;
     for (const s of subs || []) if (await send(s, { title: "CoTribu", body: "Les rappels fonctionnent sur ce téléphone.", tag: "test", url: "./" })) sent++;
+    return json({ sent });
+  }
+
+  // Messages liés aux demandes de garde (envoyés par l'app après une action)
+  if (body.mode === "notify") {
+    const jwt = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
+    const { data: u } = await db.auth.getUser(jwt);
+    if (!u || !u.user) return json({ error: "non connecté" }, 401);
+    const hid = body.household;
+    const { data: hu } = await db.from("household_users").select("role,member_id").eq("household_id", hid).eq("user_id", u.user.id).maybeSingle();
+    if (!hu) return json({ error: "interdit" }, 403);
+    const H = await loadHouseholds([hid]); const h = H[hid]; if (!h) return json({ sent: 0 });
+    const r = h.requests.get(body.id); if (!r) return json({ sent: 0 });
+    const when = `${frDate(r.date)}${r.allDay || !r.start ? "" : ` ${hm(r.start)}${r.end ? "-" + hm(r.end) : ""}`}`;
+    const { data: subs } = await db.from("push_subs").select("*").eq("household_id", hid);
+    let targets = [], payload;
+    if (body.kind === "request" && hu.role === "member") {
+      targets = (subs || []).filter((s) => (r.to || []).includes(s.member_id));
+      payload = { title: `Demande de ${personName(h, r.by) || "la famille"}`, body: `${r.title} · ${when}${r.place ? " · " + r.place : ""}`, tag: `req-${r.id}`, url: "./" };
+    } else if (body.kind === "response" && hu.role === "proche") {
+      const resp = (r.responses || {})[hu.member_id] || {};
+      const who = personName(h, hu.member_id) || "Un proche";
+      const verb = resp.answer === "accept" ? "a accepté" : resp.answer === "decline" ? "ne peut pas" : "propose un autre créneau";
+      targets = (subs || []).filter((s) => s.member_id && !s.member_id.startsWith("p-"));
+      payload = { title: `${who} ${verb}`, body: `${r.title} · ${when}${resp.note ? " · « " + resp.note + " »" : ""}`, tag: `resp-${r.id}`, url: "./" };
+    } else return json({ sent: 0 });
+    let sent = 0;
+    for (const s of targets) if (await send(s, payload)) sent++;
     return json({ sent });
   }
 

@@ -166,7 +166,7 @@ function maisonRoutines(){
     return `<section class="group ${uni}"><div class="ghead" style="background:var(--u-soft)"><span class="bubble sm">${icon(ic,16)}</span><div style="flex:1"><h3>${title}</h3><span class="muted small">${sub}</span></div><span class="pill num">${list.length}</span></div>
       ${list.map(t => `<button class="lrow" data-act="editTask" data-id="${t.id}"><span class="body"><span class="t">${esc(t.name)}</span><span class="s">${esc(S.rooms.get(t.roomId).name)} · ${esc(recLabel(t.rec))}${t.time&&t.time.at?' · '+esc(timeLabel(t.time)):''}</span></span>${avatars(assigneesOn(t, localToday()))}</button>`).join('') || '<div class="lrow"><span class="muted">Aucune</span></div>'}</section>`;
   };
-  return block('jour','Quotidiennes','Les indispensables du jour','sun','u-shop')
+  return balanceCard() + block('jour','Quotidiennes','Les indispensables du jour','sun','u-shop')
        + block('semaine','Hebdomadaires','Ce qu’on fait chaque semaine','calendar-days','u-home')
        + block('mois','Mensuelles et plus','Les grands entretiens','calendar','u-lav')
        + `<div class="u-home"><button class="addline" data-act="newTask">${icon('plus',20)}Nouvelle routine</button></div>`;

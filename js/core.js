@@ -128,9 +128,10 @@ function onDay(t, ds, today){
 }
 
 /* ---------- state ---------- */
-const COLS = ['members','rooms','tasks','items','events','meals','memories'];
+const COLS = ['members','rooms','tasks','items','events','meals','memories','proches','requests','albums'];
 const S = {
   members:new Map(), rooms:new Map(), tasks:new Map(), items:new Map(), events:new Map(), meals:new Map(), memories:new Map(),
+  proches:new Map(), requests:new Map(), albums:new Map(),
   meta:{name:'Notre maison'},
   mode:'loading', loaded:false, tab:'today', filter:'all', me:null, draft:null, sheet:null, armed:null,
   sub:{maison:'jour', courses:'liste', planning:'semaine', plus:null},
@@ -236,6 +237,7 @@ const CATS = {
   repas:  {label:'Repas', icon:'utensils',                  c:'#E5C77A', soft:'var(--cat-repas)'},
   ecole:  {label:'École / Activités enfants', icon:'backpack', c:'#E8B7B4', soft:'var(--cat-ecole)'},
   maison: {label:'Maison', icon:'house',                    c:'#B8AED1', soft:'var(--cat-maison)'},
+  garde:  {label:'Garde / Proches', icon:'users',           c:'#9AA7B0', soft:'var(--cat-garde)'},
   autre:  {label:'Autre', icon:'star',                      c:'#D98C6A', soft:'var(--cat-autre)'},
 };
 

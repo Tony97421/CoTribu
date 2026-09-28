@@ -25,6 +25,7 @@
 
 <div id="sheet" hidden><div class="scrim" data-act="close"></div><div class="panel" role="dialog" aria-modal="true" id="sheetBody"></div></div>
 <div id="toast" hidden></div>
+<div id="update" hidden role="status"><span style="flex:1">Nouvelle version de CoTribu disponible</span><button onclick="applyUpdate()">Mettre à jour</button></div>
 
 <script src="vendor/supabase-2.117.2.js"></script>
 <script src="js/icons.js"></script>
@@ -37,6 +38,9 @@
 <script src="js/extras.js"></script>
 <script src="js/accueil.js"></script>
 <script src="js/push.js"></script>
+<script src="js/proches.js"></script>
+<script src="js/premium.js"></script>
+<script src="js/ai.js"></script>
 <script>
 document.getElementById('tabs').innerHTML = [['today','house','Aujourd’hui'],['planning','calendar-days','Planning'],['maison','circle-check','Maison'],['courses','shopping-cart','Courses'],['plus','ellipsis','Plus']]
   .map(([v,ic,l]) => `<button data-act="tab" data-v="${v}">${icon(ic,24)}${l}</button>`).join('');

@@ -6,7 +6,7 @@ VIEWS.today = () => {
   const list = tasks.filter(x => !x.st.late), late = tasks.filter(x => x.st.late);
   const done = list.filter(x=>x.st.done).length, total = list.length;
   let h = ptitle('Aujourd’hui', esc(cap(fmt(today,{weekday:'long', day:'numeric', month:'long', year:'numeric'}))),
-    `<div class="row"><button class="pillbtn" data-act="goPlanWeek">${icon('calendar-days',18)}Vue semaine</button><button class="fab" data-act="quickAdd" aria-label="Ajouter">${icon('plus',26)}</button></div>`);
+    `<div class="row"><button class="pillbtn" data-act="aiOpen" aria-label="Ajouter avec l’IA">${icon('sparkles',18)}IA</button><button class="pillbtn" data-act="goPlanWeek">${icon('calendar-days',18)}Semaine</button><button class="fab" data-act="quickAdd" aria-label="Ajouter">${icon('plus',26)}</button></div>`);
   if (!S.dismissed.hello && LS.get('cotribu-dismiss-hello') !== today) {
     const hr = new Date().getHours();
     const hello = hr < 12 ? 'Belle journée à toute la tribu !' : hr < 18 ? 'Bel après-midi à la tribu !' : 'Bonne soirée à la tribu !';
@@ -14,6 +14,8 @@ VIEWS.today = () => {
     h += `<div class="banner"><span class="sun">${icon('sun',24)}</span><div><h3>${hello}</h3><span class="muted small">${line}</span></div><button class="x" data-act="dismiss" data-v="hello" aria-label="Masquer">${icon('x',18)}</button></div>`;
   }
   h += whoAmICard() + installCard(true);
+  const reqs = openRequests().slice(0,2);
+  if (reqs.length) h += `<div class="ucard u-lav"><button class="chead" data-act="plusGo" data-v="proches"><span class="bubble sm">${icon('hand-heart',16)}</span><h3>Demandes aux proches</h3><span class="spacer"></span><span class="go">${icon('chevron-right',18)}</span></button>${reqs.map(r => `<div class="row" style="justify-content:space-between;gap:8px"><span><strong>${esc(r.title)}</strong><br><span class="muted small">${esc(reqWhen(r))}</span></span>${reqStatus(r)}</div>`).join('')}</div>`;
 
   // Tâches du jour
   const shown = [...late, ...list].slice(0, 6);
@@ -52,7 +54,7 @@ VIEWS.today = () => {
   return h;
 };
 SHEETS.quick = () => `<h2>Ajouter</h2><div class="menu">
-  ${[['newTask','circle-check','Une tâche','u-home'],['newEvent','calendar','Un événement','u-plan'],['goAddItem','shopping-cart','Un article de courses','u-shop'],['newMealQ','utensils','Un repas','u-shop'],['newMemory','heart','Un souvenir','u-mem']]
+  ${[['aiOpen','sparkles','Écrire ou dicter (IA)','u-warm'],['newTask','circle-check','Une tâche','u-home'],['newEvent','calendar','Un événement','u-plan'],['goAddItem','shopping-cart','Un article de courses','u-shop'],['newMealQ','utensils','Un repas','u-shop'],['newMemory','heart','Un souvenir','u-mem'],['newRequest','hand-heart','Une demande à un proche','u-lav']]
     .map(([a,ic,l,u]) => `<button class="lrow ${u}" data-act="${a}"><span class="bubble sm">${icon(ic,16)}</span><span class="body"><span class="t">${l}</span></span>${icon('chevron-right',18)}</button>`).join('')}</div>
   <button class="btn soft" data-act="close">Fermer</button>`;
 
@@ -61,9 +63,12 @@ VIEWS.plus = () => {
   if (S.sub.plus === 'repas') return VIEWS_REPAS();
   if (S.sub.plus === 'souvenirs') return VIEWS_SOUVENIRS();
   if (S.sub.plus === 'foyer') return viewFoyer();
+  if (S.sub.plus === 'proches') return viewProches();
+  if (S.sub.plus === 'premium') return viewPremium();
+  if (S.sub.plus === 'album') return viewAlbum();
   let h = ptitle('Plus', esc(S.meta.name || 'Notre maison'), syncBadge());
   h += `<div class="menu">
-    ${[['repas','utensils','Repas','Le menu de la semaine','u-shop'],['souvenirs','heart','Souvenirs','Photos et moments importants','u-mem'],['foyer','users','Foyer et famille','Membres, invitation, notifications','u-home']]
+    ${[['premium','crown','CoTribu Premium', isPremium() ? premiumUntilLabel() : 'L’IA qui fait le travail à votre place','u-warm'],['repas','utensils','Repas','Le menu de la semaine','u-shop'],['souvenirs','heart','Souvenirs','Photos et moments importants','u-mem'],['proches','hand-heart','Proches','Grands-parents, nounou : demandes de garde','u-lav'],['foyer','users','Foyer et famille','Membres, invitation, rappels, Google Agenda','u-home']]
       .map(([v,ic,t,s,u]) => `<button class="lrow ${u}" data-act="plusGo" data-v="${v}"><span class="bubble">${icon(ic,20)}</span><span class="body"><span class="t">${t}</span><span class="s">${s}</span></span>${icon('chevron-right',18)}</button>`).join('')}</div>`;
   h += installCard(false);
   return h;
@@ -76,6 +81,7 @@ function viewFoyer(){
   h += `<div class="card"><h3>Sur ce téléphone, je suis…</h3><div class="chips">${ms.map(m=>`<button class="chip" data-act="me" data-id="${m.id}" aria-pressed="${S.me===m.id}">${avatar(m.id)}${esc(m.name)}</button>`).join('')}</div>
     <span class="muted small">Sert au filtre « Mes tâches », aux rappels et à noter qui a fait quoi. Chaque téléphone choisit le sien.</span></div>`;
   h += pushCard();
+  h += icsCard();
   h += `<div class="card"><h3>Membres</h3>${ms.map(m=>`<div class="mrow">
       <button class="av lg" style="background:${memberColor(m)};border:0" data-act="color" data-id="${m.id}" aria-label="Changer la couleur de ${esc(m.name)}">${esc((m.name||'?').charAt(0).toUpperCase())}</button>
       <input type="text" id="m-${m.id}" data-ch="memberName" data-id="${m.id}" value="${esc(m.name)}" aria-label="Prénom">
@@ -99,6 +105,14 @@ VIEWS.welcome = () => {
   const names = S.welcome || (S.welcome = ['','']);
   let h = `<div class="brand"><span class="wordmark"><span class="name" style="font-size:44px">Co<b>Tribu</b></span><span class="tagline" style="font-size:24px">Le quotidien se partage</span></span>
     <span class="muted" style="margin-top:10px">Tâches, courses, planning et souvenirs : toute la famille sur la même page.</span></div>`;
+  if (S.welcomeMode === 'proche') {
+    return h + `<div class="card u-lav"><div class="row"><span class="bubble">${icon('hand-heart',18)}</span><h3>Rejoindre le cercle d’une famille</h3></div>
+      <span class="small">Tu pourras recevoir leurs demandes (garde des enfants, coups de main) et y répondre en un geste. Tu ne verras que ce qu’ils partagent avec toi.</span>
+      <label class="f" for="p-name">Ton prénom, ou comment la famille t’appelle<input type="text" id="p-name" data-ch="pName" value="${esc(S.procheName||'')}" placeholder="Ex. Mamie, Nounou Sarah"></label>
+      <label class="f" for="p-code">Code<input type="text" id="p-code" class="codein num" data-ch="pCode" value="${esc(S.procheCode||'')}" maxlength="6" autocomplete="off" autocapitalize="characters"></label>
+      <button class="btn upri" data-act="pJoin" ${S.busy?'disabled':''}>${S.busy?'Connexion…':'Rejoindre'}</button></div>
+      <button class="btn ghost" data-act="wMode" data-v="create">Je veux plutôt créer ma propre famille</button>`;
+  }
   h += seg('wMode', S.welcomeMode, [['create','Créer un foyer'],['join','Rejoindre un foyer']], 'u-home');
   if (S.welcomeMode === 'join') {
     h += `<div class="card"><h3>Code d’invitation</h3><span class="muted small">Demande-le à la personne qui a créé le foyer (Plus → Foyer).</span>
@@ -111,6 +125,7 @@ VIEWS.welcome = () => {
       <button class="btn soft" data-act="wAdd">${icon('plus',18)}Ajouter quelqu’un</button></div>
     <div class="card"><h3>Modèle « Entretien maison standard »</h3>
       <span class="small muted">Lundi courses et frigo · mardi cuisine · mercredi chambre enfant · jeudi chambre parents · vendredi salle de bain et WC · dimanche salon. Tout se modifie ensuite.</span>
+      <label class="f" for="w-desc">Ou décris ta maison, l’IA prépare tout (facultatif)<textarea id="w-desc" data-ch="wDesc" placeholder="Ex. maison avec jardin, 2 enfants de 6 et 10 ans, un chien, on travaille tous les deux">${esc(S.wDesc||'')}</textarea></label>
       <button class="btn deep" data-act="wGo" ${S.busy?'disabled':''}>${S.busy?'Création…':'Créer le foyer'}</button></div>`;
   }
   return h;
@@ -124,7 +139,7 @@ Object.assign(H, {
   goRepas: () => { closeSheet(true); S.tab = 'plus'; goSub(() => { S.sub.plus = 'repas'; }); },
   goSouvenirs: () => { S.tab = 'plus'; goSub(() => { S.sub.plus = 'souvenirs'; }); },
   goAddItem: () => { if (S.sheet) closeSheet(); S.tab = 'courses'; S.sub.courses = 'liste'; S.aisleOpen = null; render(); window.scrollTo(0,0); setTimeout(() => { const i = document.getElementById('c-new'); if (i) i.focus(); }, 60); },
-  plusGo: el => goSub(() => { S.sub.plus = el.dataset.v; }),
+  plusGo: el => { if (S.tab !== 'plus') S.tab = 'plus'; goSub(() => { S.sub.plus = el.dataset.v; }); if (el.dataset.v === 'premium') loadAiUsage(); },
   wMode: el => { S.welcomeMode = el.dataset.v; render(); },
   wAdd: () => { S.welcome.push(''); render(); },
   wGo: () => createHousehold(),
@@ -151,7 +166,8 @@ Object.assign(CH, {
   homeName: el => putMeta({...S.meta, name: el.value.trim() || 'Notre maison'}),
   memberName: el => { const m = clone(S.members.get(el.dataset.id)); const v = el.value.trim(); if (!v || v === m.name) return; m.name = v; put('members', m); render(); },
   wHome: el => { S.wHome = el.value; },
+  wDesc: el => { S.wDesc = el.value; },
   wName: el => { S.welcome[+el.dataset.i] = el.value; },
   jCode: el => { const v = el.value.toUpperCase().replace(/[^A-Z0-9]/g,''); if (v !== el.value) el.value = v; S.joinCode = v; },
 });
-['wHome','wName','jCode'].forEach(k => LIVE.add(k));
+['wHome','wName','jCode','wDesc'].forEach(k => LIVE.add(k));

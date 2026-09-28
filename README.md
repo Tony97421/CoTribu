@@ -6,7 +6,7 @@ App web installable (PWA), hébergée sur GitHub Pages, données dans Supabase.
 
 ## Mise en place (une seule fois)
 
-1. **Supabase → SQL Editor** : lancer dans l'ordre `supabase/schema.sql`, `supabase/migration-2.sql`, `supabase/migration-3.sql`.
+1. **Supabase → SQL Editor** : lancer dans l'ordre `supabase/schema.sql`, puis `migration-2.sql`, `migration-3.sql`, `migration-4.sql`.
 2. **Supabase → Authentication** : activer *Allow anonymous sign-ins*.
 3. **GitHub → Settings → Pages** : *Deploy from a branch*, branche `main`, dossier `/ (root)`.
 
@@ -30,7 +30,13 @@ L'app est ensuite disponible sur `https://tony97421.github.io/CoTribu/`.
 | `js/ui.js` | navigation, panneaux, événements communs |
 | `js/accueil.js`, `maison.js`, `courses.js`, `planning.js`, `extras.js` | les univers (repas et souvenirs dans `extras.js`) |
 | `js/push.js` | abonnement aux rappels |
+| `js/proches.js` | cercle de proches et demandes de garde |
+| `js/premium.js` | Premium par foyer, codes cadeaux, lien Google Agenda |
+| `js/ai.js` | fonctions IA (Premium) |
 | `supabase/functions/cotribu-push/` | fonction serveur qui envoie les rappels |
+| `supabase/functions/cotribu-ai/` | fonction serveur IA (Claude Haiku), secret `ANTHROPIC_API_KEY` |
+| `supabase/functions/cotribu-ics/` | flux agenda privé pour Google Agenda |
+| `supabase/admin.sql` | commandes pour offrir le Premium et créer des codes cadeaux |
 | `sw.js` | cache hors ligne de l'app ; changer `VERSION` à chaque mise en ligne |
 | `manifest.webmanifest`, `icons/` | installation sur l'écran d'accueil |
 | `vendor/supabase-2.117.2.js` | bibliothèque Supabase |

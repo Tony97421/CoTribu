@@ -36,6 +36,7 @@ function planWeekView(){
   const evs = eventsOn(day);
   h += evs.length ? `<div style="display:flex;flex-direction:column;gap:10px">${evs.map(e => evCard(e, day)).join('')}</div>` : `<div class="empty"><span class="muted">Rien de prévu ce jour-là.</span></div>`;
   h += `<div class="u-plan"><button class="addline" data-act="newEvent">${icon('plus',20)}Ajouter un événement</button></div>`;
+  h += `<div class="u-lav"><button class="addline" data-act="newRequest">${icon('hand-heart',20)}Demander une garde à un proche</button></div>`;
   return h;
 }
 function planDayView(){

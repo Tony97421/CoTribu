@@ -6,9 +6,9 @@ const LIVE = new Set();// data-ch mis à jour à chaque frappe (sinon au « chan
 const SHEETS = {};     // nom → fonction qui renvoie le HTML d'une feuille
 
 const memberColor = m => COLORS[(m && m.color) % COLORS.length] || COLORS[0];
-const nameOf = id => (S.members.get(id)||{}).name || 'Quelqu’un';
+const nameOf = id => (S.members.get(id)||S.proches.get(id)||{}).name || 'Quelqu’un';
 function avatar(id, cls=''){
-  const m = S.members.get(id);
+  const m = S.members.get(id) || S.proches.get(id);
   if (!m) return `<span class="av free ${cls}" title="Qui veut">?</span>`;
   return `<span class="av ${cls}" style="background:${memberColor(m)}" title="${esc(m.name)}">${esc((m.name||'?').trim().charAt(0).toUpperCase())}</span>`;
 }
@@ -19,6 +19,7 @@ let toastT;
 function toast(msg){ const el = document.getElementById('toast'); el.textContent = msg; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(()=>el.hidden=true, 2800); }
 
 function topbar(){
+  if (S.role === 'proche') return `<div class="topbar"><span class="wordmark"><span class="name">Co<b>Tribu</b></span><span class="tagline">Le quotidien se partage</span></span><div class="people">${S.me ? avatar(S.me) : ''}</div></div>`;
   const ms = sorted(S.members).slice(0,5);
   return `<div class="topbar">
     <button class="wordmark" data-act="tab" data-v="today" aria-label="CoTribu, accueil"><span class="name">Co<b>Tribu</b></span><span class="tagline">Le quotidien se partage</span></button>
@@ -39,7 +40,7 @@ function seg(name, cur, options, uni){
 /* ---------- rendu ---------- */
 function render(){
   const tabs = document.querySelector('.tabs');
-  tabs.hidden = S.mode !== 'app';
+  tabs.hidden = S.mode !== 'app' || S.role === 'proche';
   tabs.querySelectorAll('button').forEach(b => b.setAttribute('aria-current', b.dataset.v === S.tab ? 'page' : 'false'));
   const v = document.getElementById('view');
   const a = document.activeElement, keep = a && a.id && v.contains(a) && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA') ? {id:a.id, val:a.value, s:a.selectionStart} : null;
@@ -47,7 +48,7 @@ function render(){
   else if (S.mode === 'error') v.innerHTML = `<div class="empty" style="margin-top:40px"><h3>Impossible de charger le foyer</h3><span class="muted">${esc(S.errMsg ? explain({message:S.errMsg}) : 'Vérifie ta connexion puis réessaie.')}</span>${S.errMsg ? `<code class="small muted" style="overflow-wrap:anywhere">${esc(S.errMsg)}</code>` : ''}<button class="btn primary" data-act="retry">Réessayer</button></div>`;
   else if (S.mode !== 'app' || !S.loaded) v.innerHTML = '<div class="loading">Chargement de la tribu…</div>';
   else {
-    if (S.me && !S.members.has(S.me)) S.me = null;
+    if (S.role !== 'proche' && S.me && !S.members.has(S.me)) S.me = null;
     v.innerHTML = topbar() + (VIEWS[S.tab] || VIEWS.today)();
     afterRender();
   }
@@ -80,7 +81,7 @@ window.addEventListener('popstate', () => {
   if (S.sheet) { closeSheet(true); return; }
   if (S.roomOpen) { S.roomOpen = null; render(); return; }
   if (S.aisleOpen) { S.aisleOpen = null; render(); return; }
-  if (S.tab === 'plus' && S.sub.plus) { S.sub.plus = null; render(); return; }
+  if (S.tab === 'plus' && S.sub.plus) { S.sub.plus = S.sub.plus === 'album' ? 'souvenirs' : null; render(); return; }
 });
 function back(){ if (history.state && history.state.sub) history.back(); else { S.roomOpen = null; S.aisleOpen = null; S.sub.plus = null; render(); } }
 const backBtn = label => `<button class="back" data-act="back">${icon('chevron-left',20)}${esc(label)}</button>`;
