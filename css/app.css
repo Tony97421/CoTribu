@@ -461,3 +461,7 @@ body.is-dragging{user-select:none;-webkit-user-select:none;cursor:grabbing}
 .thx.sent{opacity:.75;border-color:transparent}
 .thx.sent svg{fill:currentColor}
 @media (prefers-reduced-motion: reduce){.addbar .mic.on{animation:none}}
+/* les fenêtres du bas défilent en entier (le contenu ne se tasse plus) et l'arrière-plan ne bouge plus */
+#sheet .panel{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+#sheet .panel > *{flex-shrink:0}
+body.sheet-open{overflow:hidden}

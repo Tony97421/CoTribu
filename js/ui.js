@@ -69,11 +69,11 @@ function afterRender(){ AFTER.forEach(fn => { try { fn(); } catch(e){ console.wa
 
 /* ---------- feuilles (panneaux du bas) ---------- */
 function openSheet(kind){
-  S.sheet = kind; S.armed = null; renderSheet(); document.getElementById('sheet').hidden = false;
+  S.sheet = kind; S.armed = null; renderSheet(); document.getElementById('sheet').hidden = false; document.body.classList.add('sheet-open');
   if (!(history.state && history.state.sheet)) history.pushState({sheet:1}, '');
 }
 function closeSheet(fromPop){
-  S.sheet = null; S.draft = null; S.armed = null; document.getElementById('sheet').hidden = true;
+  S.sheet = null; S.draft = null; S.armed = null; document.getElementById('sheet').hidden = true; document.body.classList.remove('sheet-open');
   if (!fromPop && history.state && history.state.sheet) { ignorePop = true; history.back(); }
 }
 let ignorePop = false;

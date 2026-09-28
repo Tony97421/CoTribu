@@ -49,13 +49,16 @@ function dragFollow(){ // l'élément suit le doigt
 function dragMove(){
   const {row, kind} = DG;
   row.style.pointerEvents = 'none';
-  const el = document.elementFromPoint(Math.min(Math.max(DG.x, 8), window.innerWidth - 8), DG.y);
+  // si le doigt dépasse le bord de la fenêtre, on vise la première/dernière ligne visible
+  const sr = DG.scroller ? DG.scroller.getBoundingClientRect() : {top: 0, bottom: window.innerHeight};
+  const py = Math.min(Math.max(DG.y, sr.top + 24), sr.bottom - 24);
+  const el = document.elementFromPoint(Math.min(Math.max(DG.x, 8), window.innerWidth - 8), py);
   row.style.pointerEvents = '';
   if (el) {
     const target = el.closest(`[data-sort="${kind}"] [data-sid]`);
     if (target && target !== row) {
       const tr = target.getBoundingClientRect();
-      const after = DG.grid ? DG.x > tr.left + tr.width / 2 : DG.y > tr.top + tr.height / 2;
+      const after = DG.grid ? DG.x > tr.left + tr.width / 2 : py > tr.top + tr.height / 2;
       if (after ? target.nextElementSibling !== row : target.previousElementSibling !== row) target.parentNode.insertBefore(row, after ? target.nextSibling : target);
     } else if (!target && !DG.grid) {
       const box = el.closest(`[data-sort="${kind}"]`);
