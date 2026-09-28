@@ -454,3 +454,10 @@ body.is-dragging{user-select:none;-webkit-user-select:none;cursor:grabbing}
 [data-press]{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
 .tile.pressing{transform:scale(.97);transition:transform .35s ease}
 .tile.dragging{box-shadow:0 14px 34px rgba(0,0,0,.22);z-index:15;position:relative}
+.addbar .mic{width:44px;height:44px;border:0;border-radius:12px;background:transparent;color:var(--shop-text);display:grid;place-items:center;flex:none}
+.addbar .mic.on{background:#E88A8A;color:#fff;animation:micpulse 1.2s ease-in-out infinite}
+@keyframes micpulse{0%,100%{box-shadow:0 0 0 0 rgba(232,138,138,.55)}50%{box-shadow:0 0 0 9px rgba(232,138,138,0)}}
+.thx{display:inline-flex;align-items:center;gap:4px;border:1px solid color-mix(in srgb, var(--mem) 60%, transparent);background:var(--mem-soft);color:var(--mem-text);border-radius:999px;padding:5px 10px;font-size:13px;font-weight:700;flex:none}
+.thx.sent{opacity:.75;border-color:transparent}
+.thx.sent svg{fill:currentColor}
+@media (prefers-reduced-motion: reduce){.addbar .mic.on{animation:none}}

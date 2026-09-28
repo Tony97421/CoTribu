@@ -23,7 +23,7 @@ function itemRow(i, opts={}){
   </div>`;
 }
 function addBar(){
-  return `<div class="addbar u-shop"><input type="text" id="c-new" data-ch="cNew" data-enter="addItem" placeholder="Ajouter un article (ex. 6 bananes)" autocomplete="off" enterkeyhint="done" value="${esc(S.cNew||'')}"><button class="go" data-act="addItem" aria-label="Ajouter">${icon('plus',22)}</button></div>`;
+  return `<div class="addbar u-shop"><input type="text" id="c-new" data-ch="cNew" data-enter="addItem" placeholder="Ajouter un article (ex. 6 bananes)" autocomplete="off" enterkeyhint="done" value="${esc(S.cNew||'')}">${typeof micBtn === 'function' ? micBtn() : ''}<button class="go" data-act="addItem" aria-label="Ajouter">${icon('plus',22)}</button></div>`;
 }
 
 VIEWS.courses = () => {

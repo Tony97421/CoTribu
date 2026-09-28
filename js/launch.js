@@ -53,7 +53,7 @@ async function fetchRecipe(sh, link){
 
 // « prends du lait, des couches et du pain stp » → Lait, Couches, Pain
 const FILLER = /^(stp|svp|merci|hello|salut|coucou|bonjour|hey|ok|tu peux|peux-tu|peux tu|pourrais-tu|pense à|pense a|penses à|penses a|n['’]oublie pas|oublie pas|il faut|faut|il manque|il nous faut|on a besoin de|besoin de|on n['’]a plus de|plus de|prends|prend|prendre|achète|achete|acheter|ramène|ramene|ramener|récupère|recupere|reprends|et)(?=\s|$|[:,!])[\s:,!]*/i;
-const ARTICLE = /^(du|de la|de l['’]|des|le|la|les|l['’]|un|une|d['’])\s*/i;
+const ARTICLE = /^(?:(?:du|de la|des|le|la|les|un|une)\s+|(?:de l|l|d)['’]\s*)/i;
 function shareCandidates(text){
   const QTY = /^((\d+(?:[.,/]\d+)?\s?[½¼¾]?|[½¼¾])\s?(kg|mg|g|l|dl|cl|ml|x|pinc[ée]es?|cuill[eè]res?( [àa] (soupe|caf[ée]))?|c\.? ?[àa] ?[sc]\.?|gousses?|verres?|tranches?|sachets?|pots?|bo[iî]tes?|feuilles?|brins?)?)$/i;
   // « 250 g » seul sur une ligne, puis « de farine » à la ligne suivante (copier-coller d'une recette)
@@ -62,7 +62,7 @@ function shareCandidates(text){
   const s = joined.join('\n');
   const out = [], seen = new Set();
   for (let part of s.split(/\n|,|;|•|·|\s+et\s+|\s+\+\s+|\s+puis\s+/i)) {
-    part = part.replace(/^[\s\-–—*•·✓✔☐▪>]+/, '').replace(/[\s!.?…)]+$/, '').replace(/\s+(stp|svp|merci)$/i, '').trim();
+    part = part.replace(/^[\s\-–—*•·✓✔☐▪>]+/, '').replace(/[\s!.?…)]+$/, '').replace(/\s+(stp|svp|merci|et)$/i, '').trim();
     let prev; do { prev = part; part = part.replace(FILLER, '').trim(); } while (part !== prev);
     if (!/^\d/.test(part)) part = part.replace(ARTICLE, '').trim();
     if (part.length < 2 || part.length > 50 || part.split(/\s+/).length > 7) continue;

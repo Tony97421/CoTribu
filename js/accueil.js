@@ -14,7 +14,7 @@ VIEWS.today = () => {
     h += `<div class="banner"><span class="sun">${icon('sun',24)}</span><div><h3>${hello}</h3><span class="muted small">${line}</span></div><button class="x" data-act="dismiss" data-v="hello" aria-label="Masquer">${icon('x',18)}</button></div>`;
   }
   h += whoAmICard() + firstStepsCard() + installCard(true);
-  h += pauseCard('today') + throwbackHero() + countdownCard();
+  h += (typeof thanksCard === 'function' ? thanksCard() : '') + pauseCard('today') + throwbackHero() + countdownCard();
   h += meteoCard();
   const pk = prevMonthKey();
   if (+today.slice(8) <= 5 && LS.get('cotribu-dismiss-bilan') !== pk && sorted(S.members).some(m => !m.kid && thinkTotal(m, pk) > 0))

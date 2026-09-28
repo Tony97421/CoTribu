@@ -28,7 +28,7 @@ function taskRow(x, today, opts={}){
     <button class="check" data-act="toggle" data-id="${t.id}" aria-pressed="${st.done}" aria-label="${st.done?'Décocher':'Cocher'} ${esc(t.name)}">${checkIc()}</button>
     <div class="body" data-act="editTask" data-id="${t.id}" role="button" tabindex="0"><span class="name">${esc(t.name)}</span><span class="meta">${sub}</span></div>
     ${avatars(who)}
-    ${opts.noWhen ? '' : `<span class="when">${whenLabel(x)}</span>`}
+    ${(st.done && typeof thanksBtn === 'function' && thanksBtn(t, who[0], today)) || (opts.noWhen ? '' : `<span class="when">${whenLabel(x)}</span>`)}
   </div>`;
 }
 function toggleTask(id){
