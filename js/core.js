@@ -245,24 +245,33 @@ const CATS = {
 
 const AISLES = [
   {id:'fruits',   name:'Fruits & légumes',  icon:'apple',       tone:'shop',  kw:'pomme poire banane tomate salade carotte courgette oignon ail échalote pomme de terre patate avocat citron orange clémentine kiwi fraise raisin melon pastèque poireau brocoli chou épinard concombre poivron aubergine champignon herbe persil basilic menthe fruit légume radis haricot vert endive betterave mangue ananas pêche abricot cerise'},
-  {id:'frais',    name:'Produits frais',    icon:'milk',        tone:'plan',  kw:'lait yaourt yogourt fromage beurre crème oeuf œuf mozzarella emmental comté parmesan chèvre feta skyr compote dessert jambon lardon saucisson chorizo pâte feuilletée pâte brisée pâte à pizza tofu houmous'},
-  {id:'viandes',  name:'Viandes & poissons',icon:'drumstick',   tone:'mem',   kw:'poulet boeuf bœuf steak haché porc veau agneau dinde saucisse côte escalope rôti viande poisson saumon cabillaud thon crevette moule colin merlu filet'},
-  {id:'epicerie', name:'Épicerie',          icon:'wheat',       tone:'shop',  kw:'pâtes pates riz farine sucre sel poivre huile vinaigre moutarde ketchup mayonnaise sauce conserve lentille pois chiche semoule quinoa céréale cereale biscuit gâteau chocolat confiture miel biscotte café thé tisane épice bouillon chips gâteaux apéro olive maïs sucette bonbon compote pâte à tartiner nutella levure'},
+  {id:'frais',    name:'Produits frais',    icon:'milk',        tone:'plan',  kw:'lait yaourt yogourt fromage beurre crème oeuf œuf mozzarella emmental comté parmesan chèvre feta skyr compote dessert jambon lardon saucisson chorizo pâte feuilletée pâte brisée pâte à pizza tofu houmous gruyère gruyere camembert brie raclette reblochon roquefort cancoillotte flan crème-dessert lasagnes quiche taboulé'},
+  {id:'viandes',  name:'Viandes & poissons',icon:'drumstick',   tone:'mem',   kw:'poulet boeuf bœuf steak haché porc veau agneau dinde saucisse côte escalope rôti viande poisson saumon cabillaud thon crevette moule colin merlu filet merguez cordon chipolata poisson-pané surimi'},
+  {id:'epicerie', name:'Épicerie',          icon:'wheat',       tone:'shop',  kw:'pâtes pates riz farine sucre sel poivre huile vinaigre moutarde ketchup mayonnaise sauce conserve lentille pois chiche semoule quinoa céréale cereale biscuit gâteau chocolat confiture miel biscotte café thé tisane épice bouillon chips gâteaux apéro olive maïs sucette bonbon compote pâte à tartiner nutella levure apéritif aperitif cacahuète cacahuete pistache cornichon pesto tortilla wrap muesli granola chewing-gum dosette capsule filtre-café soupe purée'},
   {id:'boulangerie',name:'Boulangerie',     icon:'croissant',   tone:'shop',  kw:'pain baguette croissant brioche viennoiserie pain-de-mie'},
   {id:'surgeles', name:'Surgelés',          icon:'snowflake',   tone:'plan',  kw:'surgelé surgele glace frites poêlée petits pois surgelés pizza surgelée nuggets'},
-  {id:'boissons', name:'Boissons',          icon:'cup-soda',    tone:'plan',  kw:'eau jus soda coca limonade sirop vin bière biere lait d\'amande boisson'},
-  {id:'hygiene',  name:'Hygiène & beauté',  icon:'droplets',    tone:'mem',   kw:'shampoing shampooing gel douche savon dentifrice brosse à dents déodorant coton rasoir crème mouchoir serviette hygiénique tampon maquillage'},
-  {id:'entretien',name:'Maison & entretien',icon:'spray-can',   tone:'home',  kw:'lessive adoucissant liquide vaisselle pastille lave-vaisselle éponge sac poubelle essuie-tout papier toilette sopalin nettoyant javel vinaigre blanc ampoule pile aluminium film'},
+  {id:'boissons', name:'Boissons',          icon:'cup-soda',    tone:'plan',  kw:'eau jus soda coca limonade sirop vin bière biere boisson cidre champagne rosé whisky rhum lait-d-amande lait-d-avoine lait-de-soja'},
+  {id:'hygiene',  name:'Hygiène & beauté',  icon:'droplets',    tone:'mem',   kw:'shampoing shampooing gel douche savon dentifrice brosse à dents déodorant coton rasoir crème mouchoir serviette hygiénique tampon maquillage paracétamol paracetamol doliprane pansement médicament medicament vitamine crème-solaire'},
+  {id:'entretien',name:'Maison & entretien',icon:'spray-can',   tone:'home',  kw:'lessive adoucissant liquide vaisselle pastille lave-vaisselle éponge sac poubelle essuie-tout papier toilette sopalin nettoyant javel vinaigre blanc ampoule pile aluminium film bougie allumette désodorisant vinaigre-blanc'},
   {id:'bebe',     name:'Bébé & enfants',    icon:'baby',        tone:'shop',  kw:'couche lingette petit pot biberon lait infantile'},
+  {id:'animaux',  name:'Animaux',           icon:'paw-print',   tone:'warm',  kw:'croquette litière litiere pâtée patee friandise-chien friandise-chat'},
   {id:'autre',    name:'Autre',             icon:'package',     tone:'neutral', kw:''},
 ];
 const aisleOf = id => AISLES.find(a => a.id === id) || AISLES[AISLES.length-1];
 const norm = s => String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+// Classement appris : si la famille a déjà rangé ce produit (même corrigé à la main), on reprend son rayon
+function learnedAisle(name){
+  const n = norm(name); if (!n || typeof S === 'undefined' || !S.items) return null;
+  let best = null;
+  for (const i of S.items.values()) if (norm(i.name) === n && i.aisle && (!best || String(i.addedAt||'') > String(best.addedAt||''))) best = i;
+  return best ? best.aisle : null;
+}
+function aisleFor(name){ return learnedAisle(name) || guessAisle(name); }
 function guessAisle(name){
-  const n = norm(name); if (!n) return 'autre';
+  const n = norm(name).replace(/-/g,' '); if (!n) return 'autre';
   let best = 'autre', bestLen = 0;
   for (const a of AISLES) for (const k of a.kw.split(' ')) {
-    const kk = norm(k); if (kk.length < 3) continue;
+    const kk = norm(k).replace(/-/g,' '); if (kk.length < 3) continue;
     const re = new RegExp('(^|[^a-z])' + kk.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '(s|x|es)?($|[^a-z])');
     if (re.test(n) && kk.length > bestLen) { best = a.id; bestLen = kk.length; }
   }

@@ -78,7 +78,7 @@ function coursesRecipes(){
   const meals = weekMeals();
   if (!meals.length) return `<div class="empty"><h3>Aucun repas prévu cette semaine</h3><span class="muted">Planifie tes repas avec leurs ingrédients : ce qui manque s’ajoute à la liste en un geste.</span><button class="btn upri u-shop" data-act="goRepas">${icon('utensils',18)}Planifier les repas</button></div>`;
   const missing = [];
-  meals.forEach(m => (m.ingredients||[]).forEach(g => { if (!missing.some(x => norm(x.name)===norm(g.name))) missing.push({...g, aisle: g.aisle || guessAisle(g.name), meal:m}); }));
+  meals.forEach(m => (m.ingredients||[]).forEach(g => { if (!missing.some(x => norm(x.name)===norm(g.name))) missing.push({...g, aisle: g.aisle || aisleFor(g.name), meal:m}); }));
   const need = missing.filter(g => !onList(g.name));
   let h = `<div class="row"><h3 style="flex:1">À partir de vos repas de la semaine</h3><button class="btn ghost sm" data-act="addAllIngr">Tout ajouter</button></div>
     <div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:4px">${meals.map(m => `<div class="ucard u-shop" style="min-width:150px;flex:none"><span class="kicker">${esc(dayTag(m.date))} · ${m.slot==='midi'?'midi':'soir'}</span>
@@ -108,12 +108,12 @@ function addItemFromText(text, aisle){
   const p = parseItem(text); if (!p.name) return null;
   const existing = activeItems().find(i => !i.done && norm(i.name) === norm(p.name));
   if (existing) { toast(`${existing.name} est déjà dans la liste`); return existing; }
-  const it = {id:uid('i'), name:p.name, qty:p.qty, aisle: aisle || guessAisle(p.name), done:false, addedBy:S.me||null, addedAt:new Date().toISOString()};
+  const it = {id:uid('i'), name:p.name, qty:p.qty, aisle: aisle || aisleFor(p.name), done:false, addedBy:S.me||null, addedAt:new Date().toISOString()};
   put('items', it); if (typeof thinkCredit === 'function') thinkCredit('items'); return it;
 }
 function addIngredient(g){
   if (onList(g.name)) return false;
-  put('items', {id:uid('i'), name:cap(g.name), qty:g.qty||'', aisle: g.aisle || guessAisle(g.name), done:false, addedBy:S.me||null, addedAt:new Date().toISOString()});
+  put('items', {id:uid('i'), name:cap(g.name), qty:g.qty||'', aisle: g.aisle || aisleFor(g.name), done:false, addedBy:S.me||null, addedAt:new Date().toISOString()});
   return true;
 }
 function pruneHistory(){
