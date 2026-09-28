@@ -17,7 +17,7 @@ VIEWS.today = () => {
   h += pauseCard('today') + throwbackHero() + countdownCard();
   h += meteoCard();
   const pk = prevMonthKey();
-  if (+today.slice(8) <= 5 && LS.get('cotribu-dismiss-bilan') !== pk && sorted(S.members).some(m => thinkTotal(m, pk) > 0))
+  if (+today.slice(8) <= 5 && LS.get('cotribu-dismiss-bilan') !== pk && sorted(S.members).some(m => !m.kid && thinkTotal(m, pk) > 0))
     h += `<div class="ucard u-lav"><div class="row"><span class="bubble sm">${icon('brain',16)}</span><h3 style="flex:1">Le bilan de ${esc(MON[+pk.slice(5)-1])}</h3><button class="x" style="border:0;background:none;color:var(--muted)" data-act="dismissBilan" data-v="${pk}" aria-label="Masquer">${icon('x',18)}</button></div>
       <span class="small">${esc(chargeInsight(pk))}</span><button class="btn upri sm" data-act="goCharge" data-v="${pk}">Voir qui pense à quoi</button></div>`;
   const reqs = openRequests().slice(0,2);

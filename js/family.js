@@ -45,7 +45,7 @@ function viewCharge(){
   const k = S.chargeMonth || monthKey();
   let h = backBtn('Plus') + ptitle('Charge mentale', 'Qui pense à quoi, et qui le fait. Le travail invisible, enfin visible.');
   h += seg('chargeMonth', k, [[monthKey(), 'Ce mois-ci'], [prevMonthKey(), cap(MON[+prevMonthKey().slice(5)-1])]], 'u-lav');
-  const ms = sorted(S.members);
+  const ms = sorted(S.members).filter(m => !m.kid); // la charge mentale, c'est une affaire d'adultes
   const T = ms.reduce((a,m)=>a+thinkTotal(m,k),0), F = ms.reduce((a,m)=>a+doneTotal(m,k),0);
   const bars = (val, tot) => ms.map(m => { const v = val(m); const p = tot ? Math.round(v/tot*100) : 0;
     return `<div class="barrow"><span class="n">${esc(m.name)}</span><span class="track"><b style="width:${p}%;background:${memberColor(m)}"></b></span><span class="v">${p}%</span></div>`; }).join('');
@@ -55,7 +55,7 @@ function viewCharge(){
   h += `<h2>Le détail</h2>` + ms.map(m => { const a = ((m.mental||{})[k]||{}).a || {};
     const parts = Object.entries(THINK_KINDS).filter(([kk]) => a[kk]).map(([kk,[ic,l]]) => `<span class="chip" style="cursor:default">${icon(ic,14)}<b class="num">${a[kk]}</b> ${l}</span>`);
     return `<div class="card" style="gap:8px"><div class="row">${avatar(m.id)}<strong style="flex:1">${esc(m.name)}</strong><span class="muted small num">${thinkTotal(m,k)} anticipations · ${doneTotal(m,k)} faites</span></div>${parts.length ? `<div class="chips">${parts.join('')}</div>` : '<span class="muted small">Rien ce mois-ci.</span>'}</div>`; }).join('');
-  h += `<span class="info">Compté depuis chaque téléphone selon « Sur ce téléphone, je suis… ». Les enfants ne sont pas comptés dans le message du bilan.</span>`;
+  h += `<span class="info">Compté depuis chaque téléphone selon « Sur ce téléphone, je suis… ». Les enfants ne sont pas comptés : pour eux, il y a les points et récompenses.</span>`;
   return h;
 }
 
