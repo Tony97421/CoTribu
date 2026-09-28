@@ -52,12 +52,22 @@ function isOn(rec, ds) {
   return false;
 }
 function prevOcc(rec, before) { for (let i = 1; i < 400; i++) { const ds = addDays(before, -i); if (isOn(rec, ds)) return ds; } return null; }
-const intervalDue = (t) => (t.lastDone ? addDays(t.lastDone, t.rec.days) : (t.rec.anchor || t.createdAt));
-function dueToday(t, today) {
-  if (t.rec.type === "interval") return t.lastDone !== today && intervalDue(t) <= today;
+// mode vacances (même règle que l'app) : pause rangée sur les fiches membres
+function familyPause(members) {
+  let p = null; for (const m of members.values()) if (m.pause && m.pause.from && m.pause.to && (!p || String(m.pause.at || "") > String(p.at || ""))) p = m.pause;
+  return p && p.from <= p.to ? p : null;
+}
+function intervalDue(t, p) {
+  let d = t.lastDone ? addDays(t.lastDone, t.rec.days) : (t.rec.anchor || t.createdAt);
+  if (p && d >= p.from && d <= p.to && (!t.lastDone || t.lastDone < p.from)) d = addDays(d, idx(p.to) - idx(p.from) + 1);
+  return d;
+}
+function dueToday(t, today, p) {
+  if (p && today >= p.from && today <= p.to) return false;
+  if (t.rec.type === "interval") return t.lastDone !== today && intervalDue(t, p) <= today;
   if (t.done && t.done[today]) return false;
   if (isOn(t.rec, today)) return true;
-  if (t.carry) { const p = prevOcc(t.rec, today); const base = t.lastDone || addDays(t.createdAt || today, -1); return !!(p && p > base); }
+  if (t.carry) { const o = prevOcc(t.rec, today); let base = t.lastDone || addDays(t.createdAt || today, -1); if (p && p.to < today && p.to > base) base = p.to; return !!(o && o > base); }
   return false;
 }
 function assigneesOn(t, ds, members) {
@@ -119,9 +129,9 @@ const personName = (h, id) => ((h.members.get(id) || h.proches.get(id) || {}).na
 
 function morningMessage(h, memberId, today) {
   const name = personName(h, memberId);
-  const tasks = [];
+  const tasks = [], pause = familyPause(h.members);
   for (const t of (memberId.startsWith("p-") ? [] : h.tasks.values())) {
-    if (!h.rooms.has(t.roomId) || !dueToday(t, today)) continue;
+    if (!h.rooms.has(t.roomId) || !dueToday(t, today, pause)) continue;
     const a = assigneesOn(t, today, h.members);
     if (a.length && !a.includes(memberId)) continue;
     if (!a.length) continue; // « qui veut » : pas de rappel individuel

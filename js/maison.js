@@ -54,6 +54,7 @@ function toggleTask(id){
     if (who && typeof doneCredit === 'function') doneCredit(who, 1);
   }
   put('tasks', t); render();
+  if (!st.done && typeof celebrate === 'function') celebrate(who, today);
 }
 function whoAmICard(){
   if (S.me) return '';
@@ -95,7 +96,7 @@ function maisonToday(){
   const all = todayItems(today, {mine: S.filter === 'me'});
   const list = all.filter(x => !x.st.late), late = all.filter(x => x.st.late);
   const done = list.filter(x => x.st.done).length, total = list.length;
-  let h = whoAmICard();
+  let h = whoAmICard() + pauseCard('maison');
   h += `<div class="summary"><div class="ring" style="--p:${total?Math.round(done/total*100):0}"><span class="num">${done}/${total}</span></div>
     <div class="txt"><strong>Tâches du jour</strong><span class="muted">${cheer(done,total)}</span></div></div>`;
   h += seg('filter', S.filter === 'me' ? 'me' : 'all', [['me','Mes tâches'],['all','Tout le foyer']], 'u-home');
@@ -174,7 +175,7 @@ function maisonRoutines(){
     return `<section class="group ${uni}"><div class="ghead" style="background:var(--u-soft)"><span class="bubble sm">${icon(ic,16)}</span><div style="flex:1"><h3>${title}</h3><span class="muted small">${sub}</span></div><span class="pill num">${list.length}</span></div>
       ${list.map(t => `<button class="lrow" data-act="editTask" data-id="${t.id}"><span class="body"><span class="t">${esc(t.name)}</span><span class="s">${esc(S.rooms.get(t.roomId).name)} · ${esc(recLabel(t.rec))}${t.time&&t.time.at?' · '+esc(timeLabel(t.time)):''}</span></span>${avatars(assigneesOn(t, localToday()))}</button>`).join('') || '<div class="lrow"><span class="muted">Aucune</span></div>'}</section>`;
   };
-  return balanceCard() + block('jour','Quotidiennes','Les indispensables du jour','sun','u-shop')
+  return pauseCard('routines') + balanceCard() + block('jour','Quotidiennes','Les indispensables du jour','sun','u-shop')
        + block('semaine','Hebdomadaires','Ce qu’on fait chaque semaine','calendar-days','u-home')
        + block('mois','Mensuelles et plus','Les grands entretiens','calendar','u-lav')
        + `<div class="u-home"><button class="addline" data-act="newTask">${icon('plus',20)}Nouvelle routine</button></div>`;

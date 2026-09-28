@@ -86,6 +86,7 @@ function renderSheet(){
 function goSub(fn){ fn(); if (!(history.state && history.state.sub)) history.pushState({sub:1}, ''); render(); window.scrollTo(0,0); }
 window.addEventListener('popstate', () => {
   if (ignorePop) { ignorePop = false; return; }
+  if (typeof slidesOpen === 'function' && slidesOpen()) { closeSlides(true); return; }
   if (S.sheet) { closeSheet(true); return; }
   if (S.roomOpen) { S.roomOpen = null; render(); return; }
   if (S.aisleOpen) { S.aisleOpen = null; render(); return; }

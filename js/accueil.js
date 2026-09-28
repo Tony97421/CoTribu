@@ -14,6 +14,7 @@ VIEWS.today = () => {
     h += `<div class="banner"><span class="sun">${icon('sun',24)}</span><div><h3>${hello}</h3><span class="muted small">${line}</span></div><button class="x" data-act="dismiss" data-v="hello" aria-label="Masquer">${icon('x',18)}</button></div>`;
   }
   h += whoAmICard() + firstStepsCard() + installCard(true);
+  h += pauseCard('today') + throwbackHero() + countdownCard();
   h += meteoCard();
   const pk = prevMonthKey();
   if (+today.slice(8) <= 5 && LS.get('cotribu-dismiss-bilan') !== pk && sorted(S.members).some(m => thinkTotal(m, pk) > 0))
@@ -51,7 +52,7 @@ VIEWS.today = () => {
 
   // Courses + Souvenirs
   const toBuy = activeItems().filter(i => !i.done);
-  const tb = throwback();
+  const tb = throwbackHero() ? null : throwback();
   const lastMem = tb || [...S.memories.values()].sort((a,b)=>b.date.localeCompare(a.date))[0];
   h += `<div class="grid2">
     <div class="ucard u-shop"><button class="chead" data-act="tab" data-v="courses"><span class="bubble sm">${icon('shopping-cart',16)}</span><h3>Courses</h3><span class="spacer"></span><span class="go">${icon('chevron-right',18)}</span></button>

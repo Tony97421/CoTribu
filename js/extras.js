@@ -78,6 +78,7 @@ function VIEWS_SOUVENIRS(){
   let h = `${backBtn('Plus')}` + ptitle('Souvenirs', 'L’histoire de la famille, au fil des jours.', `<button class="fab" style="background:var(--mem-text)" data-act="newMemory" aria-label="Ajouter un souvenir">${icon('plus',26)}</button>`);
   const tb = throwback();
   if (tb) h += `<div class="ucard u-mem"><span class="kicker">${esc(agoLabel(tb))}</span><button class="row" style="border:0;background:none;padding:0;text-align:left;color:inherit" data-act="openMemory" data-id="${tb.id}">${(tb.photos||[])[0]?`<span class="memthumb">${photoImg(tb.photos[0])}</span>`:''}<span><strong>${esc(tb.title)}</strong><br><span class="muted small">${esc(fmt(tb.date,{day:'numeric',month:'long',year:'numeric'}))}</span></span></button></div>`;
+  if ([...S.memories.values()].some(m => (m.photos||[]).length)) h += `<button class="btn upri u-mem" data-act="slidesAll">${icon('play',18)}Diaporama des souvenirs</button>`;
   h += `<button class="btn soft u-mem" style="background:var(--mem-soft);color:var(--mem-text)" data-act="goAlbum">${icon('book-open',18)}Album de l’année (IA)</button>`;
   const f = S.memFilter || 'all';
   h += `<div class="chips u-mem"><button class="chip" data-act="memFilter" data-v="all" aria-pressed="${f==='all'}">Tout le monde</button>${sorted(S.members).map(m => `<button class="chip" data-act="memFilter" data-v="${m.id}" aria-pressed="${f===m.id}">${avatar(m.id)}${esc(m.name)}</button>`).join('')}</div>`;
@@ -108,6 +109,7 @@ SHEETS.memoryView = () => {
   const m = S.memories.get(S.viewId); if (!m) return '';
   return `<div class="row"><div style="flex:1"><span class="kicker" style="color:var(--mem-text)">${esc(fmt(m.date,{weekday:'long',day:'numeric',month:'long',year:'numeric'}))}</span><h2>${esc(m.title)}</h2></div><button class="iconbtn" data-act="editMemory" data-id="${m.id}" aria-label="Modifier">${icon('pencil',18)}</button></div>
     ${(m.photos||[]).length ? `<div class="photos">${m.photos.map(p => `<button class="ph" data-act="viewPhoto" data-path="${esc(p)}">${photoImg(p)}</button>`).join('')}</div>` : ''}
+    ${(m.photos||[]).length > 1 ? `<button class="btn upri u-mem" data-act="slidesMemory" data-id="${m.id}">${icon('play',18)}Diaporama</button>` : ''}
     ${m.text ? `<p style="margin:0;white-space:pre-wrap">${esc(m.text)}</p>` : ''}
     ${(m.members||[]).length ? `<div class="row">${avatars(m.members.filter(id=>S.members.has(id)))}<span class="muted small">${esc(m.members.filter(id=>S.members.has(id)).map(nameOf).join(', '))}</span></div>` : ''}
     <button class="btn soft" data-act="close">Fermer</button>`;

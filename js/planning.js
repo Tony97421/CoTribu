@@ -97,6 +97,7 @@ SHEETS.event = () => {
     <div class="frow"><label class="f" for="e-date">Date<input type="date" id="e-date" data-ch="eDate" value="${esc(d.date)}"></label>
       <label class="f" for="e-rep">Répéter<select id="e-rep" data-ch="eRep">${REPEATS.map(([v,l]) => `<option value="${v}" ${d.repeat===v?'selected':''}>${l}</option>`).join('')}</select></label></div>
     <label class="toggle"><input type="checkbox" id="e-all" data-ch="eAll" ${d.allDay?'checked':''}>Toute la journée</label>
+    <label class="toggle"><input type="checkbox" id="e-cd" data-ch="eCd" ${d.countdown?'checked':''}>Compte à rebours sur l’accueil</label>
     ${d.allDay ? '' : `<div class="frow"><label class="f" for="e-start">Début<input type="time" id="e-start" data-ch="eStart" value="${esc(d.start||'')}"></label><label class="f" for="e-end">Fin<input type="time" id="e-end" data-ch="eEnd" value="${esc(d.end||'')}"></label></div>`}
     <div class="sect"><span class="eyebrow">Qui est concerné</span><div class="chips u-plan">${ms.map(m => `<button class="chip" data-act="eMember" data-id="${m.id}" aria-pressed="${d.members.includes(m.id)}">${avatar(m.id)}${esc(m.name)}</button>`).join('')}</div></div>
     <label class="f" for="e-place">Lieu<input type="text" id="e-place" data-ch="ePlace" value="${esc(d.place||'')}" placeholder="Ex. Piscine Petit-Port"></label>
@@ -122,7 +123,7 @@ Object.assign(H, {
     if (!d.date) { toast('Choisis une date.'); return; }
     if (!d.allDay && d.start && d.end && d.end < d.start) { toast('La fin est avant le début.'); return; }
     const e = {id: d.id || uid('e'), title, cat:d.cat, date:d.date, allDay:!!d.allDay, start: d.allDay ? '' : (d.start||''), end: d.allDay ? '' : (d.end||''),
-      members:d.members, place:(d.place||'').trim(), note:(d.note||'').trim(), repeat:d.repeat||'none', skip:d.skip||[], by:S.me||null};
+      members:d.members, place:(d.place||'').trim(), note:(d.note||'').trim(), repeat:d.repeat||'none', skip:d.skip||[], countdown:!!d.countdown, by:S.me||null};
     put('events', e); if (!d.id) { if (typeof thinkCredit === 'function') thinkCredit('events'); } S.planDay = d.date; closeSheet(); render(); toast(d.id ? 'Événement modifié' : 'Événement ajouté');
   },
   skipEvent: () => { const e = clone(S.events.get(S.draft.id)); e.skip = [...(e.skip||[]), S.draft._day]; put('events', e); closeSheet(); render(); toast('Retiré pour ce jour-là'); },
@@ -134,6 +135,7 @@ Object.assign(CH, {
   eDate: el => { S.draft.date = el.value; },
   eRep: el => { S.draft.repeat = el.value; },
   eAll: el => { S.draft.allDay = el.checked; renderSheet(); },
+  eCd: el => { S.draft.countdown = el.checked; },
   eStart: el => { S.draft.start = el.value; if (S.draft.end && S.draft.end < el.value) { const [h,m] = el.value.split(':').map(Number); S.draft.end = pad(Math.min(23,h+1))+':'+pad(m); renderSheet(); } },
   eEnd: el => { S.draft.end = el.value; },
   ePlace: el => { S.draft.place = el.value; },

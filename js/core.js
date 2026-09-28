@@ -49,7 +49,19 @@ function nextOcc(rec, from, n=1){
 function prevOcc(rec, before){
   for (let i=1;i<400;i++){ const ds=addDays(before,-i); if (isOn(rec,ds)) return ds; } return null;
 }
-function intervalDue(t){ return t.lastDone ? addDays(t.lastDone, t.rec.days) : (t.rec.anchor || t.createdAt); }
+/* mode vacances : pause des routines pour tout le foyer (rangée sur les fiches membres) */
+function familyPause(){
+  if (typeof S === 'undefined' || !S.members) return null;
+  let p = null; for (const m of S.members.values()) if (m.pause && m.pause.from && m.pause.to && (!p || String(m.pause.at||'') > String(p.at||''))) p = m.pause;
+  return p && p.from <= p.to ? p : null;
+}
+function pausedOn(ds){ const p = familyPause(); return !!(p && ds >= p.from && ds <= p.to); }
+function intervalDue(t){
+  let d = t.lastDone ? addDays(t.lastDone, t.rec.days) : (t.rec.anchor || t.createdAt);
+  const p = familyPause(); // une échéance tombée pendant les vacances est décalée d'autant
+  if (p && d >= p.from && d <= p.to && (!t.lastDone || t.lastDone < p.from)) d = addDays(d, idx(p.to) - idx(p.from) + 1);
+  return d;
+}
 
 function recLabel(rec){
   if (!rec) return '';
@@ -99,6 +111,7 @@ function assigneesOn(t, ds){
 
 /* status for today */
 function todayStatus(t, today){
+  if (pausedOn(today)) return (t.done && t.done[today]) || t.lastDone === today ? {show:true, done:true, late:false} : {show:false};
   if (t.rec.type === 'interval'){
     const due = intervalDue(t);
     const doneToday = t.lastDone === today;
@@ -111,13 +124,15 @@ function todayStatus(t, today){
   if (sched || done) return {show:true, done, late:false};
   if (t.carry){
     const p = prevOcc(t.rec, today);
-    const base = t.lastDone || addDays(t.createdAt || today, -1);
+    let base = t.lastDone || addDays(t.createdAt || today, -1);
+    const fp = familyPause(); if (fp && fp.to < today && fp.to > base) base = fp.to; // rien « en retard » à cause des vacances
     if (p && p > base) return {show:true, done:false, late:true, since:p};
   }
   return {show:false};
 }
 /* occurrence on a future day (week view) */
 function onDay(t, ds, today){
+  if (ds !== today && pausedOn(ds)) return false;
   if (ds === today) { const s = todayStatus(t,today); return s.show && !s.late; }
   if (t.rec.type === 'interval'){
     // project forward, assuming anything due by today gets done today
