@@ -30,6 +30,7 @@ VIEWS.courses = () => {
   const s = S.sub.courses;
   let h = ptitle('Courses', 'Une liste partagée, toujours à jour.');
   h += seg('csub', s, [['liste','Ma liste'],['rayons','Par rayons'],['recettes','Recettes'],['historique','Historique']], 'u-shop');
+  if ((s === 'liste' || s === 'rayons') && !S.aisleOpen) h += storeBar();
   if (s === 'rayons') h += S.aisleOpen ? coursesAisle(S.aisleOpen) : coursesAisles();
   else if (s === 'recettes') h += coursesRecipes();
   else if (s === 'historique') h += coursesHistory();
@@ -56,10 +57,10 @@ function coursesList(){
 }
 function coursesAisles(){
   const items = activeItems();
-  return `<button class="btn soft sm" data-act="aisleOrderOpen">${icon('grip-vertical',16)}Changer l’ordre des rayons</button><div class="tiles">${aislesSorted().map(a => {
+  return `<span class="info">Appui long sur une carte pour la déplacer. <button class="linkbtn" data-act="aisleOrderOpen">Ou range-les en liste</button></span><div class="tiles" data-sort="aisles" data-grid>${aislesSorted().map(a => {
     const list = items.filter(i => (i.aisle||'autre') === a.id);
     const left = list.filter(i => !i.done).length, done = list.length - left;
-    return `<button class="tile u-${a.tone}" data-act="openAisle" data-id="${a.id}"><span class="art">${icon(a.icon,46)}</span>
+    return `<button class="tile u-${a.tone}" data-act="openAisle" data-id="${a.id}" data-sid="${a.id}" data-press><span class="art">${icon(a.icon,46)}</span>
       <span class="tb"><span class="tn" style="font-size:16px">${esc(a.name)}</span>
       <span class="tc"><span class="row" style="gap:6px"><span class="check" style="width:20px;height:20px;${list.length&&!left?'background:var(--done);border-color:var(--done)':''}">${list.length&&!left?icon('check',12,'style="opacity:1" stroke-width="3"'):''}</span>${left} ${left>1?'articles':'article'}${done?` · ${done} pris`:''}</span></span></span></button>`;
   }).join('')}</div>` + addBar();

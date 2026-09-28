@@ -446,3 +446,11 @@ label.f input,label.f select,label.f textarea{font-weight:400;color:var(--ink)}
 .dragging .grip{color:var(--accent);cursor:grabbing}
 body.is-dragging{user-select:none;-webkit-user-select:none;cursor:grabbing}
 .linkbtn{border:0;background:none;padding:0;color:var(--accent-text);font:inherit;font-weight:700;text-decoration:underline;cursor:pointer}
+.storebar{display:flex;align-items:center;gap:8px;overflow-x:auto;padding:2px 0 4px;scrollbar-width:none}
+.storebar::-webkit-scrollbar{display:none}
+.storebar>span{display:flex;align-items:center;gap:4px;flex:none}
+.storebar .chip{flex:none}
+.storebar .chip.add{border-style:dashed}
+[data-press]{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
+.tile.pressing{transform:scale(.97);transition:transform .35s ease}
+.tile.dragging{box-shadow:0 14px 34px rgba(0,0,0,.22);z-index:15;position:relative}
