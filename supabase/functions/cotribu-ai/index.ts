@@ -158,7 +158,7 @@ async function gemini(system, content, tool) {
   if (!key) throw Object.assign(new Error("ia_non_configuree"), { status: 503 });
   // On essaie plusieurs modèles : si l'un n'a pas de quota gratuit ou est surchargé, on passe au suivant.
   // Liste des modèles réellement disponibles pour cette clé (Google en retire régulièrement)
-  const models = [...new Set([Deno.env.get("GEMINI_MODEL"), ...(await geminiModels(key))].filter(Boolean))].slice(0, 6);
+  const models = [...new Set([Deno.env.get("GEMINI_MODEL"), ...(await geminiModels(key))].filter(Boolean))].slice(0, 10);
   const parts = content.map((c) => c.type === "image"
     ? { inline_data: { mime_type: c.source.media_type, data: c.source.data } }
     : { text: c.text });
@@ -205,8 +205,10 @@ async function geminiModels(key) {
       .map((m) => m.name.replace(/^models\//, ""))
       .filter((n) => /flash/.test(n) && !/(image|tts|audio|live|thinking|exp|embedding|native)/.test(n));
     const ver = (n) => parseFloat((n.match(/gemini-(\d+(?:\.\d+)?)/) || [0, 0])[1]);
-    names.sort((a, b) => (/preview/.test(a) - /preview/.test(b)) || (/latest/.test(b) - /latest/.test(a)) || ver(b) - ver(a) || (/lite/.test(a) - /lite/.test(b)));
-    MODELS_CACHE = names.length ? names : ["gemini-flash-latest", "gemini-flash-lite-latest"];
+    // les plus récents d'abord (les anciens sont souvent « no longer available » pour les nouvelles clés)
+    names.sort((a, b) => (/latest/.test(b) - /latest/.test(a)) || ver(b) - ver(a) || (/lite/.test(a) - /lite/.test(b)) || (/preview/.test(a) - /preview/.test(b)));
+    const recent = names.filter((n) => /latest/.test(n) || ver(n) >= 2.5);
+    MODELS_CACHE = recent.length ? recent : (names.length ? names : ["gemini-flash-latest", "gemini-flash-lite-latest"]);
   } catch (_) { MODELS_CACHE = ["gemini-flash-latest", "gemini-flash-lite-latest"]; }
   return MODELS_CACHE;
 }
