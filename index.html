@@ -505,7 +505,7 @@ async function boot(){
   const {data:{session}} = await sb.auth.getSession();
   if (!session) { S.mode = 'welcome'; render(); return; }
   const {data, error} = await sb.from('household_users').select('household_id, member_id, households(id,name,invite_code)');
-  if (error) { console.warn(error); S.mode = 'error'; render(); return; }
+  if (error) { console.warn(error); S.errMsg = error.message; S.mode = 'error'; render(); return; }
   if (!data.length) { S.mode = 'welcome'; render(); return; }
   const last = LS.get('cotribu-hh');
   const pick = data.find(d => d.household_id === last) || data[0];
@@ -625,7 +625,7 @@ function render(){
   // keep what the person is typing when data arrives from someone else
   const a = document.activeElement, keep = a && a.id && v.contains(a) && (a.tagName === 'INPUT') ? {id:a.id, val:a.value, s:a.selectionStart} : null;
   if (S.mode === 'welcome') v.innerHTML = viewWelcome();
-  else if (S.mode === 'error') v.innerHTML = `<div class="empty" style="margin-top:40px"><h3>Impossible de charger le foyer</h3><span class="muted">Vérifie ta connexion puis réessaie.</span><button class="btn primary" data-act="retry">Réessayer</button></div>`;
+  else if (S.mode === 'error') v.innerHTML = `<div class="empty" style="margin-top:40px"><h3>Impossible de charger le foyer</h3><span class="muted">${esc(S.errMsg ? explain({message:S.errMsg}) : 'Vérifie ta connexion puis réessaie.')}</span>${S.errMsg ? `<code class="small muted" style="overflow-wrap:anywhere">${esc(S.errMsg)}</code>` : ''}<button class="btn primary" data-act="retry">Réessayer</button></div>`;
   else if (S.mode !== 'app' || !S.loaded) v.innerHTML = '<div class="loading">Chargement de la maison…</div>';
   else {
     if (S.me && !S.members.has(S.me)) S.me = null;
@@ -949,7 +949,7 @@ const handlers = {
   tab: el => { S.tab = el.dataset.v; S.armed = null; render(); window.scrollTo(0,0); },
   filter: el => { S.filter = el.dataset.v; LS.set('cotribu-filter', S.filter); render(); },
   me: el => setMe(el.dataset.id),
-  retry: () => { S.mode = 'loading'; render(); boot(); },
+  retry: () => { S.mode = 'loading'; S.errMsg = null; render(); safeBoot(); },
   wMode: el => { S.welcomeMode = el.dataset.v; render(); },
   join: () => joinHousehold(),
   share: () => shareInvite(),
@@ -1064,7 +1064,9 @@ let lastDay = localToday();
 setInterval(() => { if (localToday() !== lastDay) { lastDay = localToday(); render(); } }, 60000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden && localToday() !== lastDay) { lastDay = localToday(); render(); } });
 
-boot();
+function safeBoot(){ boot().catch(e => { console.error(e); S.errMsg = (e && e.message) || String(e); S.mode = 'error'; render(); }); }
+setTimeout(() => { if (S.mode === 'loading') { S.errMsg = 'Le serveur ne répond pas (délai dépassé).'; S.mode = 'error'; render(); } }, 15000);
+safeBoot();
 </script>
 
 </body>

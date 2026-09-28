@@ -1,6 +1,6 @@
 // CoTribu — cache hors ligne de l'application (pas des données).
 // Changer VERSION à chaque mise en ligne pour que les téléphones prennent la nouvelle version.
-const VERSION = 'cotribu-v1';
+const VERSION = 'cotribu-v2';
 const SHELL = [
   './',
   './index.html',
