@@ -157,7 +157,8 @@ async function gemini(system, content, tool) {
   const key = Deno.env.get("GEMINI_API_KEY");
   if (!key) throw Object.assign(new Error("ia_non_configuree"), { status: 503 });
   // On essaie plusieurs modèles : si l'un n'a pas de quota gratuit ou est surchargé, on passe au suivant.
-  const models = [...new Set([Deno.env.get("GEMINI_MODEL"), "gemini-flash-latest", "gemini-2.5-flash", "gemini-flash-lite-latest", "gemini-2.5-flash-lite", "gemini-2.0-flash"].filter(Boolean))];
+  // Liste des modèles réellement disponibles pour cette clé (Google en retire régulièrement)
+  const models = [...new Set([Deno.env.get("GEMINI_MODEL"), ...(await geminiModels(key))].filter(Boolean))].slice(0, 6);
   const parts = content.map((c) => c.type === "image"
     ? { inline_data: { mime_type: c.source.media_type, data: c.source.data } }
     : { text: c.text });
@@ -169,6 +170,7 @@ async function gemini(system, content, tool) {
     generationConfig: { temperature: 0.4, maxOutputTokens: 8192 },
   });
   let last = { status: 0, text: "" };
+  const tried = [];
   for (const model of models) {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: "POST", headers: { "x-goog-api-key": key, "content-type": "application/json" }, body,
@@ -182,11 +184,31 @@ async function gemini(system, content, tool) {
     }
     const t = await res.text();
     console.error("gemini", model, res.status, t);
+    tried.push({ model, status: res.status, text: t });
     last = { status: res.status, text: `${model} : ${t.slice(0, 300)}` };
     if (![404, 429, 500, 503].includes(res.status)) break; // clé invalide, requête refusée… : inutile d'insister
   }
-  const code = last.status === 429 ? "ia_quota" : last.status === 503 ? "ia_occupee" : (last.status === 400 || last.status === 403) && /API key|PERMISSION|API_KEY/i.test(last.text) ? "ia_cle" : "ia_erreur";
-  throw Object.assign(new Error(code), { status: 502, detail: last.text });
+  const has = (st) => tried.some((x) => x.status === st);
+  const code = has(429) ? "ia_quota" : has(503) ? "ia_occupee" : (last.status === 400 || last.status === 403) && /API key|PERMISSION|API_KEY/i.test(last.text) ? "ia_cle" : "ia_erreur";
+  const summary = tried.map((x) => `${x.model} ${x.status}${x.status === 429 ? " (quota)" : x.status === 404 ? " (indisponible)" : ""}`).join(" · ");
+  throw Object.assign(new Error(code), { status: 502, detail: summary || last.text });
+}
+
+let MODELS_CACHE = null;
+async function geminiModels(key) {
+  if (MODELS_CACHE) return MODELS_CACHE;
+  try {
+    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", { headers: { "x-goog-api-key": key } });
+    const j = await r.json();
+    const names = (j.models || [])
+      .filter((m) => (m.supportedGenerationMethods || []).includes("generateContent"))
+      .map((m) => m.name.replace(/^models\//, ""))
+      .filter((n) => /flash/.test(n) && !/(image|tts|audio|live|thinking|exp|embedding|native)/.test(n));
+    const ver = (n) => parseFloat((n.match(/gemini-(\d+(?:\.\d+)?)/) || [0, 0])[1]);
+    names.sort((a, b) => (/preview/.test(a) - /preview/.test(b)) || (/latest/.test(b) - /latest/.test(a)) || ver(b) - ver(a) || (/lite/.test(a) - /lite/.test(b)));
+    MODELS_CACHE = names.length ? names : ["gemini-flash-latest", "gemini-flash-lite-latest"];
+  } catch (_) { MODELS_CACHE = ["gemini-flash-latest", "gemini-flash-lite-latest"]; }
+  return MODELS_CACHE;
 }
 
 async function claude(system, content, tool) {
