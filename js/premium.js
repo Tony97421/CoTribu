@@ -32,7 +32,10 @@ function viewPremium(){
     <span>${on ? esc(premiumUntilLabel()) : 'Tout ce qui est essentiel reste gratuit. Premium ajoute l’IA qui fait le travail à votre place.'}</span>
     ${on && S.aiUsage != null ? `<span class="small">Demandes à l’IA ce mois-ci : <b class="num">${S.aiUsage}</b> sur 300</span>` : ''}</div>`;
   h += `<div class="card">${PREMIUM_FEATURES.map(([ic,t,s]) => `<div class="feat"><span class="bubble" style="background:${on?'var(--done)':'#343532'};color:#fff">${icon(on?'check':ic,16)}</span><div><strong>${esc(t)}</strong><div class="muted small">${esc(s)}</div></div></div>`).join('')}</div>`;
-  if (!on) h += `<div class="card"><h3>S’abonner</h3><span class="muted small">L’abonnement (5 € par mois ou 39,99 € par an pour tout le foyer) arrivera avec la version Play Store.</span><button class="btn soft" disabled>Bientôt disponible</button></div>`;
+  if (!on) h += `<div class="card"><h3>S’abonner</h3>
+    <div class="plans"><div class="plan best"><span class="badge">−30 %</span><strong>49,90 € <small>/ an</small></strong><span class="muted small">soit 4,16 € par mois</span></div>
+      <div class="plan"><strong>5,90 € <small>/ mois</small></strong><span class="muted small">sans engagement</span></div></div>
+    <span class="muted small">Pour tout le foyer · 14 jours d’essai gratuit · l’abonnement arrivera avec la version Play Store.</span><button class="btn soft" disabled>Bientôt disponible</button></div>`;
   h += `<div class="card"><h3>Code cadeau</h3><span class="muted small">Quelqu’un t’a offert CoTribu Premium ? Entre ton code ici.</span>
     <input type="text" id="gift-code" class="codein" data-ch="giftCode" value="${esc(S.giftCode||'')}" autocomplete="off" autocapitalize="characters" placeholder="CODE">
     <button class="btn deep" data-act="redeem" ${S.busy?'disabled':''}>Utiliser le code</button></div>`;
