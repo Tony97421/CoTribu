@@ -17,7 +17,7 @@ const avatars = ids => ids.length ? `<span class="avs">${ids.map(id=>avatar(id))
 const checkIc = () => icon('check', 16, 'stroke-width="3"');
 
 let toastT;
-function toast(msg){ const el = document.getElementById('toast'); el.textContent = msg; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(()=>el.hidden=true, 2800); }
+function toast(msg){ const el = document.getElementById('toast'); el.textContent = msg; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(()=>el.hidden=true, msg.length > 90 ? 7000 : 2800); }
 
 function topbar(){
   if (S.role === 'proche') return `<div class="topbar"><span class="wordmark"><span class="name">Co<b>Tribu</b></span><span class="tagline">Le quotidien se partage</span></span><div class="people">${S.me ? avatar(S.me) : ''}</div></div>`;

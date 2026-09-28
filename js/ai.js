@@ -10,8 +10,10 @@ async function aiCall(mode, input, extra={}, householdId){
   const {data, error} = await sb.functions.invoke('cotribu-ai', {body:{mode, household: householdId || S.hh.id, input, context: extra.context || aiContext(), image: extra.image, imageType: extra.imageType}});
   if (error) {
     let code = 'ia_erreur';
-    try { const j = await error.context.json(); code = j.error || code; } catch(e) { if (!navigator.onLine) code = 'hors_ligne'; }
-    throw Object.assign(new Error(code), {code});
+    let detail = '';
+    try { const j = await error.context.json(); code = j.error || code; detail = j.detail || ''; } catch(e) { if (!navigator.onLine) code = 'hors_ligne'; }
+    if (detail) console.warn('IA :', detail);
+    throw Object.assign(new Error(code), {code, detail});
   }
   if (data && data.used != null) S.aiUsage = data.used;
   return data.result;
@@ -24,9 +26,12 @@ function aiError(e){
     limite_mensuelle: 'Limite de 300 demandes atteinte ce mois-ci.',
     ia_occupee: 'L’IA est très demandée, réessaie dans une minute.',
     ia_credit: 'Crédit IA épuisé : recharge-le sur la Claude Console.',
+    ia_quota: 'Quota Gemini atteint ou non disponible pour ce modèle (version gratuite). Réessaie plus tard.',
+    ia_cle: 'La clé Gemini est refusée : vérifie GEMINI_API_KEY dans Supabase.',
     hors_ligne: 'Pas de connexion internet.',
   }[c] || 'L’IA n’a pas pu répondre. Réessaie dans un instant.';
-  toast(msg);
+  const detail = e && e.detail ? ` [${String(e.detail).slice(0, 140)}]` : '';
+  toast(msg + (['ia_erreur','ia_quota','ia_occupee'].includes(c) ? detail : ''));
 }
 async function fileToBase64(file){
   const blob = await resizeImage(file, 1400, 0.8);

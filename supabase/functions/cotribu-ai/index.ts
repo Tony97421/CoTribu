@@ -156,30 +156,37 @@ async function ask(system, content, tool) {
 async function gemini(system, content, tool) {
   const key = Deno.env.get("GEMINI_API_KEY");
   if (!key) throw Object.assign(new Error("ia_non_configuree"), { status: 503 });
-  const model = Deno.env.get("GEMINI_MODEL") || "gemini-flash-latest";
+  // On essaie plusieurs modèles : si l'un n'a pas de quota gratuit ou est surchargé, on passe au suivant.
+  const models = [...new Set([Deno.env.get("GEMINI_MODEL"), "gemini-flash-latest", "gemini-2.5-flash", "gemini-flash-lite-latest", "gemini-2.5-flash-lite", "gemini-2.0-flash"].filter(Boolean))];
   const parts = content.map((c) => c.type === "image"
     ? { inline_data: { mime_type: c.source.media_type, data: c.source.data } }
     : { text: c.text });
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-    method: "POST",
-    headers: { "x-goog-api-key": key, "content-type": "application/json" },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: system }] },
-      contents: [{ role: "user", parts }],
-      tools: [{ functionDeclarations: [{ name: tool.name, description: tool.description, parameters: tool.input_schema }] }],
-      toolConfig: { functionCallingConfig: { mode: "ANY", allowedFunctionNames: [tool.name] } },
-      generationConfig: { temperature: 0.4, maxOutputTokens: 8192 },
-    }),
+  const body = JSON.stringify({
+    systemInstruction: { parts: [{ text: system }] },
+    contents: [{ role: "user", parts }],
+    tools: [{ functionDeclarations: [{ name: tool.name, description: tool.description, parameters: tool.input_schema }] }],
+    toolConfig: { functionCallingConfig: { mode: "ANY", allowedFunctionNames: [tool.name] } },
+    generationConfig: { temperature: 0.4, maxOutputTokens: 8192 },
   });
-  if (!res.ok) {
+  let last = { status: 0, text: "" };
+  for (const model of models) {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+      method: "POST", headers: { "x-goog-api-key": key, "content-type": "application/json" }, body,
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const fc = (((data.candidates || [])[0] || {}).content || {}).parts?.find((p) => p.functionCall);
+      if (fc) return fc.functionCall.args || {};
+      last = { status: 200, text: `${model} : réponse sans résultat (${JSON.stringify(data).slice(0, 200)})` };
+      continue;
+    }
     const t = await res.text();
-    console.error("gemini", res.status, t);
-    throw Object.assign(new Error(res.status === 429 || res.status === 503 ? "ia_occupee" : "ia_erreur"), { status: 502 });
+    console.error("gemini", model, res.status, t);
+    last = { status: res.status, text: `${model} : ${t.slice(0, 300)}` };
+    if (![404, 429, 500, 503].includes(res.status)) break; // clé invalide, requête refusée… : inutile d'insister
   }
-  const data = await res.json();
-  const fc = (((data.candidates || [])[0] || {}).content || {}).parts?.find((p) => p.functionCall);
-  if (!fc) throw Object.assign(new Error("ia_erreur"), { status: 502 });
-  return fc.functionCall.args || {};
+  const code = last.status === 429 ? "ia_quota" : last.status === 503 ? "ia_occupee" : (last.status === 400 || last.status === 403) && /API key|PERMISSION|API_KEY/i.test(last.text) ? "ia_cle" : "ia_erreur";
+  throw Object.assign(new Error(code), { status: 502, detail: last.text });
 }
 
 async function claude(system, content, tool) {
@@ -240,6 +247,6 @@ Deno.serve(async (req) => {
     return json({ result, used: calls + 1, limit: MONTHLY_LIMIT });
   } catch (e) {
     console.error(e);
-    return json({ error: e.message || "ia_erreur" }, e.status || 500);
+    return json({ error: e.message || "ia_erreur", detail: e.detail || "" }, e.status || 500);
   }
 });
