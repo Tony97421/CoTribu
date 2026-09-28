@@ -195,7 +195,7 @@ function showUpdate(w){ swWaiting = w; const el = document.getElementById('updat
 function applyUpdate(){ const el = document.getElementById('update'); if (el) el.querySelector('button').textContent = 'Mise à jour…'; if (swWaiting) swWaiting.postMessage('skip'); else location.reload(); }
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (swReloading) return; swReloading = true; location.reload(); });
-  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').then(reg => {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js', {updateViaCache: 'none'}).then(reg => {
     if (reg.waiting && navigator.serviceWorker.controller) showUpdate(reg.waiting);
     reg.addEventListener('updatefound', () => { const w = reg.installing; if (!w) return; w.addEventListener('statechange', () => { if (w.state === 'installed' && navigator.serviceWorker.controller) showUpdate(w); }); });
     const check = () => reg.update().catch(()=>{});

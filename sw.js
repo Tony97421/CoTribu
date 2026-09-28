@@ -1,6 +1,6 @@
 // CoTribu — service worker : cache hors ligne de l'app + réception des notifications.
 // Changer VERSION à chaque mise en ligne.
-const VERSION = 'cotribu-v6';
+const VERSION = 'cotribu-v7';
 const SHELL = [
   './', './index.html', './manifest.webmanifest', './css/app.css',
   './js/icons.js', './js/core.js', './js/store.js', './js/ui.js', './js/maison.js', './js/courses.js',
@@ -22,8 +22,10 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const req = e.request, url = new URL(req.url);
   if (req.method !== 'GET' || url.origin !== self.location.origin) return;
+  // « no-cache » : le navigateur revérifie toujours auprès du serveur (les mises à jour arrivent tout de suite)
+  const net = req.mode === 'navigate' ? new Request(req.url, {cache: 'no-cache', credentials: 'same-origin'}) : new Request(req, {cache: 'no-cache'});
   e.respondWith(
-    fetch(req).then(res => {
+    fetch(net).then(res => {
       if (res.ok) { const copy = res.clone(); caches.open(VERSION).then(c => c.put(req.mode === 'navigate' ? './index.html' : req, copy)); }
       return res;
     }).catch(() => caches.match(req.mode === 'navigate' ? './index.html' : req, {ignoreSearch: req.mode === 'navigate'}))
