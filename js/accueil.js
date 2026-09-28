@@ -83,10 +83,10 @@ function viewFoyer(){
   h += pushCard();
   h += icsCard();
   h += `<div class="card"><h3>Membres</h3>${ms.map(m=>`<div class="mrow">
-      <button class="av lg" style="background:${memberColor(m)};border:0" data-act="color" data-id="${m.id}" aria-label="Changer la couleur de ${esc(m.name)}">${esc((m.name||'?').charAt(0).toUpperCase())}</button>
+      <button style="border:0;background:none;padding:0" data-act="editMember" data-id="${m.id}" aria-label="Photo et couleur de ${esc(m.name)}">${avatar(m.id,'lg')}</button>
       <input type="text" id="m-${m.id}" data-ch="memberName" data-id="${m.id}" value="${esc(m.name)}" aria-label="Prénom">
       <button class="btn danger sm ${S.armed==='m'+m.id?'armed':''}" data-act="delMember" data-id="${m.id}">${S.armed==='m'+m.id?'Confirmer':'Retirer'}</button></div>`).join('')}
-    <span class="muted small">Touche une pastille pour changer sa couleur. Les enfants n’ont pas besoin de compte.</span>
+    <span class="muted small">Touche une pastille pour ajouter une photo ou changer la couleur. Les enfants n’ont pas besoin de compte.</span>
     <button class="btn soft" data-act="addMemberSheet">${icon('user-plus',18)}Ajouter un membre</button></div>`;
   h += `<div class="card"><h3>Inviter la famille</h3>
     <span class="small">Envoie ce lien à chaque membre. En l’ouvrant, il rejoint directement le foyer et voit tout en direct.</span>

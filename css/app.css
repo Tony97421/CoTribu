@@ -372,3 +372,9 @@ label.f input,label.f select,label.f textarea{font-weight:400;color:var(--ink)}
 .album .mo{font-family:var(--display);font-size:20px;color:var(--mem-text)}
 .linkbox{display:flex;gap:8px}
 .linkbox input{flex:1;min-width:0;font-size:13px;color:var(--muted)}
+
+.av{position:relative;overflow:hidden}
+.av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%}
+.av img:not([src]){display:none}
+.av.xl{width:84px;height:84px;font-size:32px;border-width:3px}
+.people > button:first-child{margin-left:0!important}

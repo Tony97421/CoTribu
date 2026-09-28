@@ -10,7 +10,8 @@ const nameOf = id => (S.members.get(id)||S.proches.get(id)||{}).name || 'Quelqu�
 function avatar(id, cls=''){
   const m = S.members.get(id) || S.proches.get(id);
   if (!m) return `<span class="av free ${cls}" title="Qui veut">?</span>`;
-  return `<span class="av ${cls}" style="background:${memberColor(m)}" title="${esc(m.name)}">${esc((m.name||'?').trim().charAt(0).toUpperCase())}</span>`;
+  const photo = m.photo ? `<img data-path="${esc(m.photo)}" ${photoUrl(m.photo)?`src="${esc(photoUrl(m.photo))}"`:''} alt="">` : '';
+  return `<span class="av ${m.photo?'has-photo':''} ${cls}" style="background:${memberColor(m)}" title="${esc(m.name)}">${esc((m.name||'?').trim().charAt(0).toUpperCase())}${photo}</span>`;
 }
 const avatars = ids => ids.length ? `<span class="avs">${ids.map(id=>avatar(id)).join('')}</span>` : `<span class="avs">${avatar(null)}</span>`;
 const checkIc = () => icon('check', 16, 'stroke-width="3"');
@@ -23,7 +24,7 @@ function topbar(){
   const ms = sorted(S.members).slice(0,5);
   return `<div class="topbar">
     <button class="wordmark" data-act="tab" data-v="today" aria-label="CoTribu, accueil"><span class="name">Co<b>Tribu</b></span><span class="tagline">Le quotidien se partage</span></button>
-    <div class="people">${ms.map(m=>avatar(m.id)).join('')}<button class="plus" data-act="addMemberSheet" aria-label="Ajouter un membre">${icon('plus',18)}</button></div>
+    <div class="people">${ms.map(m=>`<button style="border:0;background:none;padding:0;margin-left:-9px" data-act="editMember" data-id="${m.id}" aria-label="${esc(m.name)}">${avatar(m.id)}</button>`).join('')}<button class="plus" data-act="addMemberSheet" aria-label="Ajouter un membre">${icon('plus',18)}</button></div>
   </div>`;
 }
 function ptitle(title, sub, right=''){
@@ -105,6 +106,50 @@ Object.assign(H, {
     closeSheet(); render(); toast(n + ' fait partie de la tribu');
   },
 });
+/* ---------- fiche d'un membre : prénom, photo, couleur ---------- */
+SHEETS.memberEdit = () => {
+  const d = S.draft, m = {...d};
+  return `<h2>${esc(d.name || 'Membre')}</h2>
+    <div class="row" style="gap:16px">${(() => { const tmp = S.members.get(d.id); S.members.set(d.id, m); const a = avatar(d.id, 'xl'); tmp ? S.members.set(d.id, tmp) : S.members.delete(d.id); return a; })()}
+      <div style="display:flex;flex-direction:column;gap:8px;flex:1">
+        <label class="btn soft filebtn">${icon('camera',18)}${S.uploading ? 'Envoi…' : (d.photo ? 'Changer la photo' : 'Ajouter une photo')}<input type="file" id="me-photo" accept="image/*" data-ch="mePhoto" ${S.uploading?'disabled':''}></label>
+        ${d.photo ? `<button class="btn ghost sm" data-act="meNoPhoto">Retirer la photo</button>` : ''}</div></div>
+    <label class="f" for="me-name2">Prénom<input type="text" id="me-name2" data-ch="meName2" value="${esc(d.name)}"></label>
+    <div class="sect"><span class="eyebrow">Couleur</span><div class="chips">${COLORS.map((c,i) => `<button class="chip sq" data-act="meColor" data-v="${i}" aria-pressed="${(d.color||0)===i}" aria-label="Couleur ${i+1}" style="background:${c};border-color:${(d.color||0)===i?'var(--ink)':c};min-height:40px"></button>`).join('')}</div></div>
+    <div class="actions"><button class="btn primary" data-act="saveMemberEdit" ${S.uploading?'disabled':''}>Enregistrer</button><button class="btn soft" data-act="close">Annuler</button></div>`;
+};
+async function uploadAvatar(file, memberId){
+  const blob = await resizeImage(file, 360, 0.85);
+  const path = `${S.hh.id}/avatars/${memberId}-${Date.now().toString(36)}.jpg`;
+  const {error} = await sb.storage.from('souvenirs').upload(path, blob, {contentType:'image/jpeg', upsert:false});
+  if (error) throw error;
+  return path;
+}
+Object.assign(H, {
+  editMember: el => { const m = S.members.get(el.dataset.id); if (!m) return; S.draft = {...clone(m), _old: m.photo || null}; openSheet('memberEdit'); },
+  meColor: el => { S.draft.color = +el.dataset.v; renderSheet(); },
+  meNoPhoto: () => { S.draft.photo = null; renderSheet(); },
+  saveMemberEdit: () => {
+    const d = S.draft; const name = (d.name||'').trim(); if (!name) { toast('Écris un prénom.'); return; }
+    const old = d._old; const m = {...d, name}; delete m._old; delete m._new;
+    put('members', m);
+    const stale = [old, ...(d._new||[])].filter(p => p && p !== m.photo);
+    if (stale.length) removePhotos(stale).catch(()=>{});
+    closeSheet(); render(); toast('Profil enregistré');
+  },
+});
+Object.assign(CH, {
+  meName2: el => { S.draft.name = el.value; },
+  mePhoto: async el => {
+    const f = el.files && el.files[0]; if (!f) return;
+    S.uploading = true; renderSheet();
+    try { const p = await uploadAvatar(f, S.draft.id); (S.draft._new = S.draft._new || []).push(p); S.draft.photo = p; }
+    catch(e) { console.warn(e); toast(explain(e)); }
+    S.uploading = false; renderSheet();
+  },
+});
+LIVE.add('meName2');
+
 SHEETS.member = () => `<h2>Ajouter un membre</h2>
   <label class="f" for="mb-name">Prénom<input type="text" id="mb-name" data-ch="mbName" value="${esc(S.draft.name)}" placeholder="Ex. Léa" autocomplete="off"></label>
   <span class="info">Pas besoin de compte ni de téléphone : les enfants peuvent avoir des tâches à leur nom.</span>
