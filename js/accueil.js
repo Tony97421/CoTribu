@@ -13,7 +13,7 @@ VIEWS.today = () => {
     const line = done ? `${done} ${done>1?'tâches terminées':'tâche terminée'} aujourd’hui` : total ? `${total} ${total>1?'tâches':'tâche'} au programme` : 'Rien d’urgent aujourd’hui';
     h += `<div class="banner"><span class="sun">${icon('sun',24)}</span><div><h3>${hello}</h3><span class="muted small">${line}</span></div><button class="x" data-act="dismiss" data-v="hello" aria-label="Masquer">${icon('x',18)}</button></div>`;
   }
-  h += whoAmICard() + installCard(true);
+  h += whoAmICard() + firstStepsCard() + installCard(true);
   h += meteoCard();
   const pk = prevMonthKey();
   if (+today.slice(8) <= 5 && LS.get('cotribu-dismiss-bilan') !== pk && sorted(S.members).some(m => thinkTotal(m, pk) > 0))
@@ -82,6 +82,7 @@ VIEWS.plus = () => {
   h += `<div class="menu">
     ${[['premium','crown','CoTribu Premium', isPremium() ? premiumUntilLabel() : 'L’IA qui fait le travail à votre place','u-warm'],['charge','brain','Charge mentale','Qui pense à quoi, qui le fait','u-lav'],['points','star','Points et récompenses','Les tâches faites rapportent des points','u-shop'],['repas','utensils','Repas','Le menu de la semaine','u-shop'],['souvenirs','heart','Souvenirs','Photos et moments importants','u-mem'],['proches','hand-heart','Proches','Grands-parents, nounou : demandes de garde','u-lav'],['foyer','users','Foyer et famille','Membres, invitation, rappels, Google Agenda','u-home']]
       .map(([v,ic,t,s,u]) => `<button class="lrow ${u}" data-act="plusGo" data-v="${v}"><span class="bubble">${icon(ic,20)}</span><span class="body"><span class="t">${t}</span><span class="s">${s}</span></span>${icon('chevron-right',18)}</button>`).join('')}</div>`;
+  h += `<div class="menu"><button class="lrow" data-act="guideOpen"><span class="bubble soft" style="--u-soft:var(--home-soft);--u-text:var(--home-text)">${icon('book-open',18)}</span><span class="body"><span class="t">Guide de démarrage</span><span class="s">Revoir comment marche CoTribu</span></span>${icon('chevron-right',18)}</button></div>`;
   h += installCard(false);
   return h;
 };

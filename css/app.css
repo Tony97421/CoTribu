@@ -389,3 +389,18 @@ label.f input,label.f select,label.f textarea{font-weight:400;color:var(--ink)}
 .moodbtn span{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--mc) 35%,transparent);color:#343532}
 .moodbtn[aria-pressed="true"]{border-color:var(--mc);background:color-mix(in srgb,var(--mc) 15%,var(--surface))}
 @media (max-width:370px){.moods{grid-template-columns:repeat(2,1fr)}}
+
+/* ---- guide de démarrage ---- */
+#guide{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))}
+.gcard{width:100%;max-width:460px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:16px;position:relative;padding-top:40px;animation:up .25s ease-out}
+.gcard h1{font-size:32px}
+.gcard p{margin:0;font-size:17px;line-height:1.5;color:var(--muted);max-width:36ch}
+.gart{width:180px;height:180px;border-radius:50%;background:var(--u-soft);display:grid;place-items:center;position:relative}
+.gart::after{content:"";position:absolute;inset:-14px;border-radius:50%;border:2px dashed color-mix(in srgb,var(--u) 40%,transparent)}
+.gart span{width:120px;height:120px;border-radius:50%;background:var(--u);color:var(--u-ink);display:grid;place-items:center}
+.gart .ic{stroke-width:1.6}
+.gskip{position:absolute;top:0;right:0;border:0;background:none;color:var(--muted);font-weight:600;padding:8px;min-height:40px}
+.gdots{display:flex;gap:6px}
+.gdots i{width:8px;height:8px;border-radius:50%;background:var(--line);transition:width .2s}
+.gdots i.on{width:22px;border-radius:6px;background:var(--accent)}
+.gcard .actions{width:100%}
