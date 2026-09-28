@@ -123,7 +123,7 @@ Object.assign(H, {
     if (!d.allDay && d.start && d.end && d.end < d.start) { toast('La fin est avant le début.'); return; }
     const e = {id: d.id || uid('e'), title, cat:d.cat, date:d.date, allDay:!!d.allDay, start: d.allDay ? '' : (d.start||''), end: d.allDay ? '' : (d.end||''),
       members:d.members, place:(d.place||'').trim(), note:(d.note||'').trim(), repeat:d.repeat||'none', skip:d.skip||[], by:S.me||null};
-    put('events', e); S.planDay = d.date; closeSheet(); render(); toast(d.id ? 'Événement modifié' : 'Événement ajouté');
+    put('events', e); if (!d.id) { if (typeof thinkCredit === 'function') thinkCredit('events'); } S.planDay = d.date; closeSheet(); render(); toast(d.id ? 'Événement modifié' : 'Événement ajouté');
   },
   skipEvent: () => { const e = clone(S.events.get(S.draft.id)); e.skip = [...(e.skip||[]), S.draft._day]; put('events', e); closeSheet(); render(); toast('Retiré pour ce jour-là'); },
   delEvent: () => { if (S.armed !== 'event') { S.armed = 'event'; renderSheet(); return; } del('events', S.draft.id); closeSheet(); render(); toast('Événement supprimé'); },

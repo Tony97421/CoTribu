@@ -378,3 +378,14 @@ label.f input,label.f select,label.f textarea{font-weight:400;color:var(--ink)}
 .av img:not([src]){display:none}
 .av.xl{width:84px;height:84px;font-size:32px;border-width:3px}
 .people > button:first-child{margin-left:0!important}
+
+/* ---- météo, charge mentale ---- */
+.meteos{display:flex;gap:6px;flex-wrap:wrap}
+.meteo{border:0;background:none;padding:4px 2px;display:flex;flex-direction:column;align-items:center;gap:4px;position:relative;min-width:62px;color:inherit}
+.meteo .av{width:44px;height:44px;font-size:17px}
+.meteo .mdot{position:absolute;top:30px;left:calc(50% + 8px);width:24px;height:24px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--plan-soft)}
+.moods{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.moodbtn{border:2px solid var(--line);background:var(--surface);border-radius:16px;padding:12px 4px;display:flex;flex-direction:column;align-items:center;gap:6px;font-weight:600;font-size:13px;color:var(--ink)}
+.moodbtn span{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--mc) 35%,transparent);color:#343532}
+.moodbtn[aria-pressed="true"]{border-color:var(--mc);background:color-mix(in srgb,var(--mc) 15%,var(--surface))}
+@media (max-width:370px){.moods{grid-template-columns:repeat(2,1fr)}}

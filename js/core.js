@@ -13,7 +13,7 @@ const ymd = ds => ds.split('-').map(Number);
 const dim = (y,m) => new Date(Date.UTC(y,m,0)).getUTCDate();
 const isoWeek = ds => { const i = idx(ds), th = i + 3 - ((dow(ds)+6)%7); const y = new Date(th*DAY).getUTCFullYear(); return 1 + Math.floor((th - idx(`${y}-01-01`))/7); };
 const fmt = (ds,o) => new Intl.DateTimeFormat('fr-FR',{timeZone:'UTC',...o}).format(new Date(idx(ds)*DAY));
-const fmtShort = ds => fmt(ds,{weekday:'short',day:'numeric',month:'short'});
+const fmtShort = ds => fmt(ds, ds.slice(0,4) === localToday().slice(0,4) ? {weekday:'short',day:'numeric',month:'short'} : {day:'numeric',month:'short',year:'numeric'});
 const cap = s => s.charAt(0).toUpperCase()+s.slice(1);
 
 const DAYN = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
@@ -75,6 +75,7 @@ function recLabel(rec){
   }
   if (rec.type === 'interval'){
     const n = rec.days;
+    if (n % 365 === 0) return n === 365 ? 'Tous les ans' : `Tous les ${n/365} ans`;
     if (n % 30 === 0) return n === 30 ? 'Environ tous les mois' : `Environ tous les ${n/30} mois`;
     if (n % 7 === 0) return n === 7 ? 'Environ chaque semaine' : `Environ toutes les ${n/7} semaines`;
     return n === 1 ? 'Tous les jours' : `Tous les ${n} jours`;
@@ -85,6 +86,7 @@ const isRoutine = rec => rec && rec.type === 'weekly' && (rec.every||1) === 1;
 
 /* assignment */
 function assigneesOn(t, ds){
+  if (t.swap && t.swap[ds] && S.members.has(t.swap[ds])) return [t.swap[ds]]; // « je m'en occupe » pour ce jour-là
   const a = t.assign || {mode:'anyone'};
   const ids = (a.members||[]).filter(id => S.members.has(id));
   if (a.mode === 'fixed') return ids;
@@ -229,7 +231,7 @@ function buildTemplate(memberNames, today){
 
 
 /* ---------- univers, catégories, rayons ---------- */
-const ROOM_ICONS = ['house','cooking-pot','sofa','bath','toilet','bed-double','baby','washing-machine','sprout','trees','shirt','armchair','book-open','car','package','sparkles'];
+const ROOM_ICONS = ['house','wrench','cooking-pot','sofa','bath','toilet','bed-double','baby','washing-machine','sprout','trees','shirt','armchair','book-open','car','package','sparkles'];
 
 const CATS = {
   famille:{label:'Famille / Sorties', icon:'trees',          c:'#A7C4A0', soft:'var(--cat-famille)'},

@@ -46,10 +46,12 @@ function toggleTask(id){
     const past = Object.keys(t.done).sort();
     t.lastDone = past.at(-1) || null; t.lastBy = t.lastDone ? t.done[t.lastDone] : null;
     if (typeof removeTaskPoints === 'function') removeTaskPoints(prev, t, today);
+    if (typeof doneCredit === 'function' && prev) doneCredit(prev, -1);
   } else {
     t.done[today] = who || 'x'; t.lastDone = today; t.lastBy = who;
     const keys = Object.keys(t.done).sort(); while (keys.length > 40) delete t.done[keys.shift()];
     if (who && typeof addTaskPoints === 'function') addTaskPoints(who, t, today);
+    if (who && typeof doneCredit === 'function') doneCredit(who, 1);
   }
   put('tasks', t); render();
 }
@@ -133,7 +135,7 @@ function maisonRooms(){
       <span class="tb"><span class="tn"><span class="bubble soft sm">${icon(r.icon||'house',16)}</span>${esc(r.name)}</span>
       ${p.total ? `<span class="pbar"><b style="width:${pct}%"></b></span><span class="tc"><span class="num">${p.done}/${p.total} aujourd’hui</span>${icon('chevron-right',16)}</span>`
                 : `<span class="tc"><span>${p.all} ${p.all>1?'tâches':'tâche'} · rien aujourd’hui</span>${icon('chevron-right',16)}</span>`}</span></button>`;
-  }).join('')}<button class="tile addt" data-act="newRoom">${icon('plus',28)}Nouvelle pièce</button></div>`;
+  }).join('')}<button class="tile addt" data-act="newRoom">${icon('plus',28)}Nouvelle pièce</button></div>` + equipCard();
 }
 function nextLabel(t, today){
   if (t.rec.type === 'interval'){ const due = intervalDue(t); return due <= today ? (due < today ? 'En retard' : 'Aujourd’hui') : fmtShort(due); }
@@ -152,7 +154,7 @@ function roomDetail(id){
     const checkBtn = st.show ? `<button class="check" data-act="toggle" data-id="${t.id}" aria-pressed="${!!st.done}" aria-label="Cocher ${esc(t.name)}">${checkIc()}</button>` : `<span class="check" style="border-style:dashed;opacity:.5" aria-hidden="true"></span>`;
     return `<div class="task ${st.done?'done':''}">${checkBtn}
       <div class="body" data-act="editTask" data-id="${t.id}" role="button" tabindex="0"><span class="name">${esc(t.name)}</span>
-      <span class="meta"><span>${esc(recLabel(t.rec))}${t.time&&t.time.at?' · '+esc(timeLabel(t.time)):''}</span><span class="tag ${st.late?'late':''}">${st.late?'En retard':esc(nextLabel(t,today))}</span></span></div>${avatars(a)}</div>`;
+      <span class="meta"><span>${esc(recLabel(t.rec))}${t.time&&t.time.at?' · '+esc(timeLabel(t.time)):''}</span><span class="tag ${st.late?'late':''}">${st.late?'En retard':esc(nextLabel(t,today))}</span></span>${t.note?`<span class="meta">${esc(t.note)}</span>`:''}</div>${avatars(a)}</div>`;
   }).join('') || '<div class="task"><span class="muted">Aucune tâche dans cette pièce.</span></div>'}</section>`;
   h += `<div class="u-home"><button class="addline" data-act="newTask" data-room="${id}">${icon('plus',20)}Ajouter une tâche</button></div>`;
   return h;
@@ -316,7 +318,8 @@ Object.assign(H, {
       createdAt: old ? old.createdAt : today, lastDone: old ? old.lastDone : null, lastBy: old ? (old.lastBy||null) : null, done: old ? clone(old.done||{}) : {},
     };
     if (old && JSON.stringify(old.rec) !== JSON.stringify(rec)) t.createdAt = today;
-    put('tasks', t); closeSheet(); render(); toast(d.id ? 'Tâche modifiée' : 'Tâche ajoutée');
+    if (!d.id) t.by = S.me || null;
+    put('tasks', t); if (!d.id) { if (typeof thinkCredit === 'function') thinkCredit('tasks'); } closeSheet(); render(); toast(d.id ? 'Tâche modifiée' : 'Tâche ajoutée');
   },
   delTask: () => { if (S.armed !== 'task') { S.armed = 'task'; renderSheet(); return; } del('tasks', S.draft.id); closeSheet(); render(); toast('Tâche supprimée'); },
   newRoom: () => { S.draft = {id:null, name:'', icon:'house', assign:{mode:'fixed', members:[]}}; openSheet('room'); },

@@ -37,7 +37,7 @@ function saveMealDraft(){
   const d = S.draft; const name = (d.name||'').trim();
   if (!name) { toast('Écris le nom du plat.'); return null; }
   const m = {id: d.id || uid('r'), name, date:d.date, slot:d.slot, ingredients: parseIngredients(d.ingrText), by:S.me||null};
-  put('meals', m); return m;
+  put('meals', m); if (!d.id) { if (typeof thinkCredit === 'function') thinkCredit('meals'); } return m;
 }
 Object.assign(H, {
   shiftMealWeek: el => { S.mealWeek = addDays(S.mealWeek || mondayOf(localToday()), +el.dataset.v); render(); },
@@ -123,7 +123,7 @@ Object.assign(H, {
     const d = S.draft; const title = (d.title||'').trim();
     if (!title) { toast('Donne un titre au souvenir.'); return; }
     const m = {id: d.id || uid('s'), title, date: d.date || localToday(), text:(d.text||'').trim(), members:d.members, photos:d.photos, eventId:d.eventId||null, by:S.me||null};
-    put('memories', m);
+    put('memories', m); if (!d.id) { if (typeof thinkCredit === 'function') thinkCredit('memories'); }
     if (d._rm && d._rm.length) removePhotos(d._rm).catch(()=>{});
     closeSheet(); render(); toast(d.id ? 'Souvenir modifié' : 'Souvenir ajouté');
   },

@@ -14,6 +14,11 @@ VIEWS.today = () => {
     h += `<div class="banner"><span class="sun">${icon('sun',24)}</span><div><h3>${hello}</h3><span class="muted small">${line}</span></div><button class="x" data-act="dismiss" data-v="hello" aria-label="Masquer">${icon('x',18)}</button></div>`;
   }
   h += whoAmICard() + installCard(true);
+  h += meteoCard();
+  const pk = prevMonthKey();
+  if (+today.slice(8) <= 5 && LS.get('cotribu-dismiss-bilan') !== pk && sorted(S.members).some(m => thinkTotal(m, pk) > 0))
+    h += `<div class="ucard u-lav"><div class="row"><span class="bubble sm">${icon('brain',16)}</span><h3 style="flex:1">Le bilan de ${esc(MON[+pk.slice(5)-1])}</h3><button class="x" style="border:0;background:none;color:var(--muted)" data-act="dismissBilan" data-v="${pk}" aria-label="Masquer">${icon('x',18)}</button></div>
+      <span class="small">${esc(chargeInsight(pk))}</span><button class="btn upri sm" data-act="goCharge" data-v="${pk}">Voir qui pense à quoi</button></div>`;
   const reqs = openRequests().slice(0,2);
   if (reqs.length) h += `<div class="ucard u-lav"><button class="chead" data-act="plusGo" data-v="proches"><span class="bubble sm">${icon('hand-heart',16)}</span><h3>Demandes aux proches</h3><span class="spacer"></span><span class="go">${icon('chevron-right',18)}</span></button>${reqs.map(r => `<div class="row" style="justify-content:space-between;gap:8px"><span><strong>${esc(r.title)}</strong><br><span class="muted small">${esc(reqWhen(r))}</span></span>${reqStatus(r)}</div>`).join('')}</div>`;
 
@@ -72,9 +77,10 @@ VIEWS.plus = () => {
   if (S.sub.plus === 'premium') return viewPremium();
   if (S.sub.plus === 'album') return viewAlbum();
   if (S.sub.plus === 'points') return viewPoints();
+  if (S.sub.plus === 'charge') return viewCharge();
   let h = ptitle('Plus', esc(S.meta.name || 'Notre maison'), syncBadge());
   h += `<div class="menu">
-    ${[['premium','crown','CoTribu Premium', isPremium() ? premiumUntilLabel() : 'L’IA qui fait le travail à votre place','u-warm'],['points','star','Points et récompenses','Les tâches faites rapportent des points','u-shop'],['repas','utensils','Repas','Le menu de la semaine','u-shop'],['souvenirs','heart','Souvenirs','Photos et moments importants','u-mem'],['proches','hand-heart','Proches','Grands-parents, nounou : demandes de garde','u-lav'],['foyer','users','Foyer et famille','Membres, invitation, rappels, Google Agenda','u-home']]
+    ${[['premium','crown','CoTribu Premium', isPremium() ? premiumUntilLabel() : 'L’IA qui fait le travail à votre place','u-warm'],['charge','brain','Charge mentale','Qui pense à quoi, qui le fait','u-lav'],['points','star','Points et récompenses','Les tâches faites rapportent des points','u-shop'],['repas','utensils','Repas','Le menu de la semaine','u-shop'],['souvenirs','heart','Souvenirs','Photos et moments importants','u-mem'],['proches','hand-heart','Proches','Grands-parents, nounou : demandes de garde','u-lav'],['foyer','users','Foyer et famille','Membres, invitation, rappels, Google Agenda','u-home']]
       .map(([v,ic,t,s,u]) => `<button class="lrow ${u}" data-act="plusGo" data-v="${v}"><span class="bubble">${icon(ic,20)}</span><span class="body"><span class="t">${t}</span><span class="s">${s}</span></span>${icon('chevron-right',18)}</button>`).join('')}</div>`;
   h += installCard(false);
   return h;
@@ -145,6 +151,8 @@ Object.assign(H, {
   goRepas: () => { closeSheet(true); S.tab = 'plus'; goSub(() => { S.sub.plus = 'repas'; }); },
   goSouvenirs: () => { S.tab = 'plus'; goSub(() => { S.sub.plus = 'souvenirs'; }); },
   goAddItem: () => { if (S.sheet) closeSheet(); S.tab = 'courses'; S.sub.courses = 'liste'; S.aisleOpen = null; render(); window.scrollTo(0,0); setTimeout(() => { const i = document.getElementById('c-new'); if (i) i.focus(); }, 60); },
+  goCharge: el => { S.chargeMonth = el.dataset.v; S.tab = 'plus'; goSub(() => { S.sub.plus = 'charge'; }); },
+  dismissBilan: el => { LS.set('cotribu-dismiss-bilan', el.dataset.v); render(); },
   plusGo: el => { if (S.tab !== 'plus') S.tab = 'plus'; goSub(() => { S.sub.plus = el.dataset.v; }); if (el.dataset.v === 'premium') loadAiUsage(); },
   wMode: el => { S.welcomeMode = el.dataset.v; render(); },
   wAdd: () => { S.welcome.push(''); render(); },

@@ -108,7 +108,7 @@ function addItemFromText(text, aisle){
   const existing = activeItems().find(i => !i.done && norm(i.name) === norm(p.name));
   if (existing) { toast(`${existing.name} est déjà dans la liste`); return existing; }
   const it = {id:uid('i'), name:p.name, qty:p.qty, aisle: aisle || guessAisle(p.name), done:false, addedBy:S.me||null, addedAt:new Date().toISOString()};
-  put('items', it); return it;
+  put('items', it); if (typeof thinkCredit === 'function') thinkCredit('items'); return it;
 }
 function addIngredient(g){
   if (onList(g.name)) return false;
@@ -142,8 +142,11 @@ Object.assign(H, {
   },
   itemToggle: el => {
     const i = clone(S.items.get(el.dataset.id)); if (!i) return;
+    const was = i.doneBy;
     i.done = !i.done; i.doneBy = i.done ? (S.me||null) : null; i.doneAt = i.done ? new Date().toISOString() : null;
-    put('items', i); render();
+    put('items', i);
+    if (typeof doneCredit === 'function') { if (i.done && i.doneBy) doneCredit(i.doneBy, 1); else if (!i.done && was) doneCredit(was, -1); }
+    render();
   },
   foldAisle: el => { S.closedAisles = S.closedAisles || {}; S.closedAisles[el.dataset.v] = !S.closedAisles[el.dataset.v]; render(); },
   clearBought: () => {

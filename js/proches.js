@@ -150,7 +150,7 @@ Object.assign(H, {
     const r = {id:uid('q'), type:d.type, title, children:d.children, date:d.date, allDay:!!d.allDay, start:d.allDay?'':d.start, end:d.allDay?'':d.end,
       place:(d.place||'').trim(), note:(d.note||'').trim(), to:d.to, status:'pending', responses:{}, by:S.me||null, createdAt:new Date().toISOString()};
     closeSheet(); render();
-    await put('requests', r);
+    await put('requests', r); if (typeof thinkCredit === 'function') thinkCredit('requests');
     notifyPush('request', r.id);
     toast(`Demande envoyée à ${d.to.map(nameOf).join(', ')}`);
   },
