@@ -1,0 +1,1071 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>CoTribu</title>
+<meta name="description" content="L'organisation de la maison, partagée par toute la famille.">
+<meta name="theme-color" content="#2C6A5A">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="CoTribu">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#EEF2EF; --surface:#FFFFFF; --surface2:#E3EAE6; --ink:#1B2724; --muted:#5F6F69; --line:#D3DDD8;
+  --accent:#2C6A5A; --accent-ink:#FFFFFF; --accent-soft:#D5E8E0;
+  --late:#B8681A; --late-soft:#F6E5CF; --danger:#B3402F;
+  --shadow:0 1px 2px rgba(20,40,34,.06),0 4px 14px rgba(20,40,34,.06);
+  --display:"Bricolage Grotesque",ui-rounded,system-ui,sans-serif;
+  --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#111816; --surface:#1A2320; --surface2:#23302C; --ink:#E4ECE8; --muted:#94A69F; --line:#2E3C37;
+    --accent:#6CC0A6; --accent-ink:#0E1F1A; --accent-soft:#1F3A32;
+    --late:#E6A55A; --late-soft:#3A2B18; --danger:#E7826F;
+    --shadow:0 1px 2px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#111816; --surface:#1A2320; --surface2:#23302C; --ink:#E4ECE8; --muted:#94A69F; --line:#2E3C37;
+  --accent:#6CC0A6; --accent-ink:#0E1F1A; --accent-soft:#1F3A32;
+  --late:#E6A55A; --late-soft:#3A2B18; --danger:#E7826F;
+  --shadow:0 1px 2px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--bg)}
+html{padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;font-family:var(--body);font-size:16px;line-height:1.45;color:var(--ink);padding-inline:16px;padding-block:0 calc(84px + env(safe-area-inset-bottom,0px));-webkit-tap-highlight-color:transparent}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:18px;padding-top:18px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:30px;line-height:1.1;font-weight:700}
+h2{font-size:20px;font-weight:700}
+h3{font-size:17px;font-weight:600}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+.num{font-variant-numeric:tabular-nums}
+.head{display:flex;flex-direction:column;gap:4px}
+.head .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.sync{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.sync i{width:8px;height:8px;border-radius:50%;background:var(--accent);display:inline-block}
+.sync.local i{background:var(--late)}
+
+/* segmented */
+.seg{display:flex;background:var(--surface2);border-radius:12px;padding:3px;gap:3px}
+.seg button{flex:1;border:0;background:transparent;padding:8px 10px;border-radius:9px;font-weight:600;font-size:14px;color:var(--muted);min-height:38px}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+
+/* progress */
+.summary{display:flex;align-items:center;gap:16px;background:var(--surface);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
+.ring{--p:0;width:64px;height:64px;border-radius:50%;flex:none;display:grid;place-items:center;background:conic-gradient(var(--accent) calc(var(--p)*1%),var(--surface2) 0)}
+.ring span{width:50px;height:50px;border-radius:50%;background:var(--surface);display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:15px}
+.summary .txt{display:flex;flex-direction:column;gap:2px}
+.summary strong{font-size:18px;font-family:var(--display)}
+
+/* groups */
+.group{display:flex;flex-direction:column;background:var(--surface);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+.ghead{display:flex;align-items:center;gap:10px;padding:14px 16px 10px}
+.ghead h3{flex:1}
+.dot{width:10px;height:10px;border-radius:3px;flex:none}
+.pill{font-size:13px;font-weight:600;padding:2px 9px;border-radius:99px;background:var(--surface2);color:var(--muted);font-variant-numeric:tabular-nums}
+.pill.ok{background:var(--accent-soft);color:var(--accent)}
+.pill.late{background:var(--late-soft);color:var(--late)}
+.bar{height:3px;background:var(--surface2);margin:0 16px 4px;border-radius:3px;overflow:hidden}
+.bar b{display:block;height:100%;background:var(--accent);border-radius:3px}
+.group.late .ghead h3{color:var(--late)}
+
+.task{display:flex;align-items:center;gap:12px;padding:10px 16px;border-top:1px solid var(--line);min-height:56px}
+.task:first-of-type{border-top:0}
+.check{width:30px;height:30px;border-radius:9px;border:2px solid var(--line);background:transparent;flex:none;display:grid;place-items:center;padding:0;transition:background .15s,border-color .15s}
+.check svg{width:16px;height:16px;opacity:0}
+.task.done .check{background:var(--accent);border-color:var(--accent)}
+.task.done .check svg{opacity:1}
+.task .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.task .name{font-weight:600;overflow-wrap:anywhere}
+.task.done .name{text-decoration:line-through;color:var(--muted);font-weight:500}
+.task .meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--muted)}
+.tag{font-size:12px;font-weight:600;padding:1px 7px;border-radius:6px;background:var(--surface2);color:var(--muted)}
+.tag.late{background:var(--late-soft);color:var(--late)}
+.avs{display:flex}
+.av{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;color:#fff;flex:none;border:2px solid var(--surface)}
+.avs .av+.av{margin-left:-7px}
+.av.free{background:var(--surface2);color:var(--muted);font-size:14px}
+.av.lg{width:40px;height:40px;font-size:16px}
+
+.empty{background:var(--surface);border-radius:18px;padding:22px 18px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--shadow)}
+.tomorrow{display:flex;flex-direction:column;gap:8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1.5px solid var(--line);background:var(--surface);border-radius:99px;padding:6px 12px;font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:6px;min-height:36px}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.chip .n{font-size:11px;background:var(--accent-ink);color:var(--accent);border-radius:99px;width:18px;height:18px;display:inline-grid;place-items:center}
+.chip.sq{border-radius:10px;min-width:40px;justify-content:center}
+.info{font-size:14px;color:var(--muted);display:flex;gap:6px}
+
+/* week */
+details.day{background:var(--surface);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+details.day summary{list-style:none;display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer}
+details.day summary::-webkit-details-marker{display:none}
+.dnum{width:44px;flex:none;display:flex;flex-direction:column;align-items:center;line-height:1.05}
+.dnum b{font-family:var(--display);font-size:22px}
+.dnum small{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+details.day.today .dnum b{color:var(--accent)}
+.dsum{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.dsum .rooms{font-weight:600;overflow-wrap:anywhere}
+.chev{color:var(--muted);transition:transform .2s}
+details[open] .chev{transform:rotate(90deg)}
+.dlist{border-top:1px solid var(--line);padding:6px 0}
+.dline{display:flex;align-items:center;gap:10px;padding:7px 16px;font-size:15px}
+.dline .t{flex:1;min-width:0}
+.dline .r{font-size:12px;color:var(--muted)}
+
+/* maison */
+.room .task{cursor:pointer}
+.room .task .go{color:var(--muted)}
+.btn{border:0;border-radius:12px;padding:11px 16px;font-weight:600;min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.soft{background:var(--surface2);color:var(--ink)}
+.btn.danger{background:transparent;color:var(--danger)}
+.btn.danger.armed{background:var(--danger);color:#fff}
+.btn.block{width:100%}
+.addrow{border-top:1px solid var(--line);display:flex}
+.addrow .btn{flex:1;justify-content:flex-start;padding-left:16px;border-radius:0}
+.iconbtn{border:0;background:var(--surface2);width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--muted);flex:none}
+
+/* foyer */
+.card{background:var(--surface);border-radius:18px;box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:12px}
+.mrow{display:flex;align-items:center;gap:10px}
+.mrow input{flex:1;min-width:0}
+input[type=text],input[type=number],select{background:var(--bg);border:1.5px solid var(--line);border-radius:11px;padding:10px 12px;min-height:44px;width:100%}
+input:focus,select:focus{border-color:var(--accent);outline:none}
+label.f{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
+label.f input,label.f select{font-weight:400;font-size:16px;color:var(--ink)}
+.frow{display:flex;gap:8px;flex-wrap:wrap}
+.frow > *{flex:1;min-width:120px}
+
+/* tabs */
+.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
+.tabs .in{display:flex;width:100%;max-width:560px}
+.tabs button{flex:1;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 4px 10px;font-size:12px;font-weight:600;color:var(--muted)}
+.tabs svg{width:24px;height:24px}
+.tabs button[aria-current="page"]{color:var(--accent)}
+
+/* sheet */
+#sheet{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center}
+#sheet .scrim{position:absolute;inset:0;background:rgba(10,20,17,.45)}
+#sheet .panel{position:relative;background:var(--surface);width:100%;max-width:560px;max-height:92%;overflow:auto;border-radius:22px 22px 0 0;padding:8px 16px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:16px;animation:up .22s ease-out}
+.grab{width:40px;height:5px;border-radius:5px;background:var(--line);margin:4px auto 0}
+.sect{display:flex;flex-direction:column;gap:8px}
+.preview{background:var(--accent-soft);color:var(--ink);border-radius:12px;padding:10px 12px;font-size:14px}
+.preview b{color:var(--accent)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.actions .btn{flex:1}
+@keyframes up{from{transform:translateY(30px);opacity:.4}to{transform:none;opacity:1}}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(92px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;z-index:30;max-width:calc(100% - 32px)}
+.loading{padding:60px 0;text-align:center;color:var(--muted)}
+
+.brand{display:flex;align-items:center;gap:14px;padding-top:24px}
+.brand h1{font-size:34px}
+.code{font-family:var(--display);font-size:34px;font-weight:700;letter-spacing:.18em;text-align:center;background:var(--accent-soft);color:var(--accent);border-radius:14px;padding:10px 0}
+.codein{font-family:var(--display);font-size:26px!important;letter-spacing:.3em;text-align:center;text-transform:uppercase}
+#inv-link{font-size:13px;color:var(--muted)}
+.steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px;font-size:15px}
+.card.install{border:1.5px solid var(--accent-soft)}
+.btn[disabled]{opacity:.6;cursor:progress}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap" id="view"><div class="loading">Chargement de la maison…</div></div>
+
+<nav class="tabs" aria-label="Navigation">
+  <div class="in">
+    <button data-act="tab" data-v="today" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Aujourd'hui</button>
+    <button data-act="tab" data-v="week"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>Semaine</button>
+    <button data-act="tab" data-v="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Maison</button>
+    <button data-act="tab" data-v="family"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M16 14.2c2.8.1 5 2.6 5 5.8"/></svg>Foyer</button>
+  </div>
+</nav>
+
+<div id="sheet" hidden><div class="scrim" data-act="close"></div><div class="panel" role="dialog" aria-modal="true" id="sheetBody"></div></div>
+<div id="toast" hidden></div>
+
+<script src="vendor/supabase-2.117.2.js"></script>
+<script>
+/* ---------- dates (all UTC-based day math) ---------- */
+const DAY = 864e5;
+const pad = n => String(n).padStart(2, '0');
+const localToday = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+const idx = ds => { const [y,m,d] = ds.split('-').map(Number); return Math.round(Date.UTC(y,m-1,d)/DAY); };
+const fromIdx = i => { const d = new Date(i*DAY); return `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`; };
+const addDays = (ds,n) => fromIdx(idx(ds)+n);
+const dow = ds => (idx(ds)+4)%7; // 0 = dimanche
+const mondayOf = ds => addDays(ds, -((dow(ds)+6)%7));
+const mod = (a,n) => ((a%n)+n)%n;
+const ymd = ds => ds.split('-').map(Number);
+const dim = (y,m) => new Date(Date.UTC(y,m,0)).getUTCDate();
+const isoWeek = ds => { const i = idx(ds), th = i + 3 - ((dow(ds)+6)%7); const y = new Date(th*DAY).getUTCFullYear(); return 1 + Math.floor((th - idx(`${y}-01-01`))/7); };
+const fmt = (ds,o) => new Intl.DateTimeFormat('fr-FR',{timeZone:'UTC',...o}).format(new Date(idx(ds)*DAY));
+const fmtShort = ds => fmt(ds,{weekday:'short',day:'numeric',month:'short'});
+const cap = s => s.charAt(0).toUpperCase()+s.slice(1);
+
+const DAYN = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+const DAYL = ['D','L','M','M','J','V','S'];
+const MON = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+const MONS = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+const WEEK_ORDER = [1,2,3,4,5,6,0];
+const COLORS = ['#2F7FA8','#C4553F','#7B59B5','#C98A1C','#3A9467','#B84F86','#4F6B8F'];
+
+/* ---------- recurrence engine ---------- */
+function isOn(rec, ds){
+  if (!rec) return false;
+  if (rec.type === 'weekly'){
+    if (!(rec.days||[]).includes(dow(ds))) return false;
+    const w = Math.floor((idx(ds) - idx(rec.anchor || ds))/7);
+    return mod(w, rec.every||1) === 0;
+  }
+  if (rec.type === 'monthly'){
+    const [y,m,d] = ymd(ds);
+    if (rec.months && rec.months.length){ if (!rec.months.includes(m)) return false; }
+    else { const [ay,am] = (rec.anchor||ds).split('-').map(Number); if (mod((y-ay)*12 + (m-am), rec.every||1) !== 0) return false; }
+    const last = dim(y,m);
+    if (rec.mode === 'day') return d === Math.min(rec.day||1, last);
+    if (dow(ds) !== rec.weekday) return false;
+    if (rec.nth === -1) return d + 7 > last;
+    return Math.ceil(d/7) === rec.nth;
+  }
+  return false;
+}
+function nextOcc(rec, from, n=1){
+  const out=[]; for (let i=0;i<800 && out.length<n;i++){ const ds=addDays(from,i); if (isOn(rec,ds)) out.push(ds); } return out;
+}
+function prevOcc(rec, before){
+  for (let i=1;i<400;i++){ const ds=addDays(before,-i); if (isOn(rec,ds)) return ds; } return null;
+}
+function intervalDue(t){ return t.lastDone ? addDays(t.lastDone, t.rec.days) : (t.rec.anchor || t.createdAt); }
+
+function recLabel(rec){
+  if (!rec) return '';
+  if (rec.type === 'weekly'){
+    const days = WEEK_ORDER.filter(d => (rec.days||[]).includes(d));
+    const e = rec.every||1;
+    if (days.length === 7 && e === 1) return 'Tous les jours';
+    const names = days.map(d => DAYN[d]);
+    const list = names.length > 1 ? names.slice(0,-1).join(', ') + ' et ' + names.at(-1) : names[0] || '—';
+    if (e === 1) return names.length === 1 ? 'Chaque ' + list : cap(list);
+    if (e === 2) return names.length === 1 ? `Un ${list} sur deux` : `${cap(list)}, une semaine sur deux`;
+    return `${cap(list)}, toutes les ${e} semaines`;
+  }
+  if (rec.type === 'monthly'){
+    const part = rec.mode === 'day' ? `le ${rec.day===1?'1er':rec.day}` : `${rec.nth===1?'1er':rec.nth===-1?'dernier':rec.nth+'e'} ${DAYN[rec.weekday]}`;
+    if (rec.months && rec.months.length){
+      const ms = [...rec.months].sort((a,b)=>a-b).map(m=>MON[m-1]);
+      if (ms.length === 1) return `${cap(part)} de ${ms[0]}, chaque année`;
+      return `${cap(part)} de ${ms.slice(0,-1).join(', ')} et ${ms.at(-1)}`;
+    }
+    const e = rec.every||1;
+    return e === 1 ? `${cap(part)} du mois` : `${cap(part)} du mois, tous les ${e} mois`;
+  }
+  if (rec.type === 'interval'){
+    const n = rec.days;
+    if (n % 30 === 0) return n === 30 ? 'Environ tous les mois' : `Environ tous les ${n/30} mois`;
+    if (n % 7 === 0) return n === 7 ? 'Environ chaque semaine' : `Environ toutes les ${n/7} semaines`;
+    return n === 1 ? 'Tous les jours' : `Tous les ${n} jours`;
+  }
+  return '';
+}
+const isRoutine = rec => rec && rec.type === 'weekly' && (rec.every||1) === 1;
+
+/* assignment */
+function assigneesOn(t, ds){
+  const a = t.assign || {mode:'anyone'};
+  const ids = (a.members||[]).filter(id => S.members.has(id));
+  if (a.mode === 'fixed') return ids;
+  if (a.mode === 'rotation' && ids.length){
+    const w = Math.floor((idx(ds) - idx(a.anchor || mondayOf(ds)))/7);
+    return [ids[mod(w, ids.length)]];
+  }
+  return [];
+}
+
+/* status for today */
+function todayStatus(t, today){
+  if (t.rec.type === 'interval'){
+    const due = intervalDue(t);
+    const doneToday = t.lastDone === today;
+    if (doneToday) return {show:true, done:true, late:false};
+    if (due <= today) return {show:true, done:false, late: due < today, since: due};
+    return {show:false};
+  }
+  const done = !!(t.done && t.done[today]);
+  const sched = isOn(t.rec, today);
+  if (sched || done) return {show:true, done, late:false};
+  if (t.carry){
+    const p = prevOcc(t.rec, today);
+    const base = t.lastDone || addDays(t.createdAt || today, -1);
+    if (p && p > base) return {show:true, done:false, late:true, since:p};
+  }
+  return {show:false};
+}
+/* occurrence on a future day (week view) */
+function onDay(t, ds, today){
+  if (ds === today) { const s = todayStatus(t,today); return s.show && !s.late; }
+  if (t.rec.type === 'interval'){
+    // project forward, assuming anything due by today gets done today
+    let due = intervalDue(t);
+    if (t.lastDone === today || due <= today) due = addDays(today, t.rec.days);
+    const diff = idx(ds) - idx(due);
+    return diff >= 0 && diff % t.rec.days === 0;
+  }
+  return isOn(t.rec, ds);
+}
+
+/* ---------- state ---------- */
+const S = {
+  members:new Map(), rooms:new Map(), tasks:new Map(), meta:{name:'Notre maison'},
+  mode:'loading', loaded:false, tab:'today', filter:'all', me:null, readOnly:false, draft:null, sheet:null, armed:null,
+};
+const LS = {
+  get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
+  set(k,v){ try { localStorage.setItem(k,v); } catch(e){} },
+};
+S.filter = LS.get('cotribu-filter') || 'all';
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = p => p + '-' + Math.random().toString(36).slice(2,9);
+const sorted = map => [...map.values()].sort((a,b)=>(a.order??0)-(b.order??0) || String(a.name).localeCompare(b.name));
+const clone = o => JSON.parse(JSON.stringify(o));
+
+/*TPL*/
+function buildTemplate(memberNames, today){
+  const mon = mondayOf(today);
+  const members = memberNames.map((n,i)=>({id:'m'+(i+1), name:n, color:i%COLORS.length, order:i}));
+  const ids = members.map(m=>m.id);
+  const two = ids.slice(0,2);
+  const W = (days, every=1) => ({type:'weekly', days, every, anchor:mon});
+  const M = (o) => ({type:'monthly', every:1, anchor:today.slice(0,7), mode:'nth', nth:1, weekday:0, ...o});
+  const I = (days, offset=0) => ({type:'interval', days, anchor:addDays(today, offset)});
+  const fixed = (i=0) => ({mode:'fixed', members:[ids[i] || ids[0]]});
+  const rot = () => ({mode:'rotation', members:two, anchor:mon});
+  const anyone = () => ({mode:'anyone', members:[]});
+  const rooms = [
+    ['general','Toute la maison'],['cuisine','Cuisine'],['salon','Salon'],['sdb','Salle de bain'],['wc','WC'],
+    ['ch-parents','Chambre parents'],['ch-enfant','Chambre enfant'],['linge','Linge'],['exterieur','Extérieur'],
+  ].map(([id,name],i)=>({id:'r-'+id, name, order:i}));
+  const T = [];
+  const add = (room, list) => list.forEach(([name, rec, assign, carry]) => T.push({room, name, rec, assign, carry: !!carry}));
+  add('general', [
+    ['Vider le lave-vaisselle', W([0,1,2,3,4,5,6]), rot()],
+    ['Faire les courses', W([1]), fixed(0)],
+    ['Sortir les poubelles', W([2,5]), rot()],
+    ['Arroser les plantes', W([3,6]), anyone()],
+  ]);
+  add('cuisine', [
+    ['Nettoyer le frigo', W([1]), fixed(0)],
+    ['Nettoyer les façades', W([2]), fixed(1)],
+    ['Plan de travail', W([2]), fixed(1)],
+    ['Poussière', W([2]), fixed(1)],
+    ['Évier', W([2]), fixed(1)],
+    ['Aspirateur', W([2]), fixed(1)],
+    ['Sol', W([2]), fixed(1)],
+    ['Détartrer la cafetière', I(30,0), anyone()],
+    ['Nettoyer le four', I(90,40), anyone()],
+  ]);
+  add('salon', [
+    ['Poussière', W([0]), fixed(0)],
+    ['Aspirateur', W([0]), fixed(0)],
+    ['Sol', W([0]), fixed(0)],
+    ['Vitres', M({nth:1, weekday:0}), fixed(0), true],
+  ]);
+  add('sdb', [
+    ['Lavabo et miroir', W([5]), rot()],
+    ['Douche / baignoire', W([5]), rot()],
+    ['Changer les serviettes', W([5]), rot()],
+    ['Sol', W([5]), rot()],
+    ['Joints et siphons', I(90,60), anyone(), true],
+  ]);
+  add('wc', [
+    ['Cuvette', W([5]), rot()],
+    ['Sol', W([5]), rot()],
+  ]);
+  add('ch-parents', [
+    ['Poussière', W([4]), fixed(0)],
+    ['Aspirateur', W([4]), fixed(0)],
+    ['Changer les draps', W([4],2), fixed(0), true],
+  ]);
+  add('ch-enfant', [
+    ['Ranger la chambre', W([3]), anyone()],
+    ['Poussière', W([3]), anyone()],
+    ['Aspirateur', W([3]), anyone()],
+    ['Changer les draps', W([3],2), anyone(), true],
+  ]);
+  add('linge', [
+    ['Lancer une machine', I(3,0), anyone()],
+    ['Laver les rideaux', M({months:[4,10], weekday:6}), anyone(), true],
+  ]);
+  add('exterieur', [
+    ['Balayer la terrasse', W([6],2), fixed(0)],
+    ['Grand nettoyage de la terrasse', M({months:[3,9], weekday:6}), anyone(), true],
+  ]);
+  const counters = {};
+  const tasks = T.map(t => { counters[t.room] = (counters[t.room]||0)+1; return {
+    id:`t-${t.room}-${counters[t.room]}`, roomId:'r-'+t.room, name:t.name, rec:t.rec, assign:t.assign, carry:t.carry,
+    order:counters[t.room], createdAt:today, lastDone:null, done:{} }; });
+  return {members, rooms, tasks};
+}
+/*/TPL*/
+
+/* ---------- Supabase ---------- */
+const SUPABASE_URL = 'https://seyoygitqtttyftwzssr.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_q-6hNV7Z4zsaVRhMine7Dg_hjBd_HV4';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:false}});
+S.hh = null;        // foyer courant {id, name, invite_code}
+S.live = false;     // canal temps réel connecté
+S.busy = false;
+S.welcomeMode = 'create';
+S.joinCode = (new URLSearchParams(location.search).get('code') || '').toUpperCase().slice(0,6);
+if (S.joinCode) S.welcomeMode = 'join';
+let channel = null;
+
+const queues = new Map();
+function enqueue(key, fn){
+  const prev = queues.get(key) || Promise.resolve();
+  const next = prev.then(fn).then(r => { if (r && r.error) throw r.error; }).catch(err => onWriteError(err));
+  queues.set(key, next);
+  return next;
+}
+function onWriteError(err){
+  console.warn(err);
+  if (!navigator.onLine) toast("Pas de connexion : la modification n’a pas été enregistrée.");
+  else toast("Modification non enregistrée. Réessaie dans un instant.");
+  loadAll();
+}
+const row = (col, obj) => ({household_id:S.hh.id, col, id:obj.id, data:obj, updated_at:new Date().toISOString()});
+function put(col, obj){
+  S[col].set(obj.id, obj);
+  enqueue(col+'/'+obj.id, () => sb.from('docs').upsert(row(col,obj)));
+}
+function putMany(col, list){
+  list.forEach(o => S[col].set(o.id, o));
+  return enqueue('bulk', () => sb.from('docs').upsert(list.map(o=>row(col,o))));
+}
+function del(col, id){
+  S[col].delete(id);
+  enqueue(col+'/'+id, () => sb.from('docs').delete().match({household_id:S.hh.id, col, id}));
+}
+function putMeta(meta){
+  S.meta = meta;
+  if (S.hh) { S.hh.name = meta.name; enqueue('hh', () => sb.from('households').update({name:meta.name}).eq('id', S.hh.id)); }
+}
+
+async function loadAll(){
+  if (!S.hh) return;
+  const {data, error} = await sb.from('docs').select('col,id,data').eq('household_id', S.hh.id);
+  if (error) { console.warn(error); return; }
+  const next = {members:new Map(), rooms:new Map(), tasks:new Map()};
+  data.forEach(r => { if (next[r.col]) next[r.col].set(r.id, {...r.data, id:r.id}); });
+  Object.assign(S, next);
+  const h = await sb.from('households').select('id,name,invite_code').eq('id', S.hh.id).maybeSingle();
+  if (h.data) { S.hh = h.data; S.meta = {name:h.data.name}; }
+  S.loaded = true;
+  render();
+}
+function subscribe(){
+  if (channel) sb.removeChannel(channel);
+  channel = sb.channel('docs-'+S.hh.id)
+    .on('postgres_changes', {event:'*', schema:'public', table:'docs', filter:'household_id=eq.'+S.hh.id}, p => {
+      if (p.eventType === 'DELETE') { const o = p.old || {}; if (o.household_id && o.household_id !== S.hh.id) return; if (S[o.col]) S[o.col].delete(o.id); }
+      else { const r = p.new; if (S[r.col]) S[r.col].set(r.id, {...r.data, id:r.id}); }
+      render();
+    })
+    .subscribe(status => { S.live = status === 'SUBSCRIBED'; renderHeaderStatus(); });
+}
+async function openHousehold(h){
+  S.hh = h; S.meta = {name:h.name}; S.loaded = false;
+  LS.set('cotribu-hh', h.id);
+  const memberKey = 'cotribu-me-'+h.id; S.me = LS.get(memberKey);
+  S.mode = 'app'; render();
+  await loadAll(); subscribe();
+}
+async function boot(){
+  const {data:{session}} = await sb.auth.getSession();
+  if (!session) { S.mode = 'welcome'; render(); return; }
+  const {data, error} = await sb.from('household_users').select('household_id, member_id, households(id,name,invite_code)');
+  if (error) { console.warn(error); S.mode = 'error'; render(); return; }
+  if (!data.length) { S.mode = 'welcome'; render(); return; }
+  const last = LS.get('cotribu-hh');
+  const pick = data.find(d => d.household_id === last) || data[0];
+  if (pick.member_id && !LS.get('cotribu-me-'+pick.household_id)) LS.set('cotribu-me-'+pick.household_id, pick.member_id);
+  openHousehold(pick.households);
+}
+async function ensureSession(){
+  const {data:{session}} = await sb.auth.getSession();
+  if (session) return;
+  const {error} = await sb.auth.signInAnonymously();
+  if (error) throw error;
+}
+function explain(err){
+  const m = (err && (err.message || err.msg) || '').toLowerCase();
+  if (m.includes('code_invalide')) return 'Code introuvable. Vérifie les 6 caractères.';
+  if (m.includes('anonymous')) return 'Connexion désactivée : active « Allow anonymous sign-ins » dans Supabase.';
+  if (m.includes('function') || m.includes('relation') || m.includes('schema')) return 'La base n’est pas encore prête : lance le script SQL dans Supabase.';
+  if (!navigator.onLine) return 'Pas de connexion internet.';
+  return 'Ça n’a pas marché : ' + (err && err.message || 'erreur inconnue');
+}
+async function createHousehold(){
+  const names = (S.welcome||[]).map(n=>n.trim()).filter(Boolean);
+  if (!names.length) { toast('Ajoute au moins un prénom.'); return; }
+  S.busy = true; render();
+  try {
+    await ensureSession();
+    const {data:h, error} = await sb.rpc('create_household', {p_name:(S.wHome||'').trim() || 'Notre maison'});
+    if (error) throw error;
+    S.hh = h;
+    const tpl = buildTemplate(names, localToday());
+    const rows = [...tpl.members.map(o=>row('members',o)), ...tpl.rooms.map(o=>row('rooms',o)), ...tpl.tasks.map(o=>row('tasks',o))];
+    const up = await sb.from('docs').upsert(rows); if (up.error) throw up.error;
+    LS.set('cotribu-me-'+h.id, tpl.members[0].id);
+    await sb.from('household_users').update({member_id:tpl.members[0].id}).eq('household_id', h.id).eq('user_id', (await sb.auth.getUser()).data.user.id);
+    S.busy = false; S.tab = 'today';
+    await openHousehold(h);
+    toast('Foyer créé. Invite ta famille depuis l’onglet Foyer.');
+  } catch(e) { S.busy = false; render(); toast(explain(e)); }
+}
+async function joinHousehold(){
+  const code = (S.joinCode||'').trim().toUpperCase();
+  if (code.length < 6) { toast('Le code fait 6 caractères.'); return; }
+  S.busy = true; render();
+  try {
+    await ensureSession();
+    const {data:h, error} = await sb.rpc('join_household', {p_code:code});
+    if (error) throw error;
+    history.replaceState(null, '', location.pathname);
+    S.busy = false; S.tab = 'today';
+    await openHousehold(h);
+    toast('Bienvenue dans « ' + h.name + ' »');
+  } catch(e) { S.busy = false; render(); toast(explain(e)); }
+}
+async function setMe(id){
+  S.me = id; LS.set('cotribu-me-'+S.hh.id, id); render();
+  const u = (await sb.auth.getUser()).data.user;
+  if (u) sb.from('household_users').update({member_id:id}).eq('household_id', S.hh.id).eq('user_id', u.id).then(()=>{});
+}
+async function leaveHousehold(){
+  const u = (await sb.auth.getUser()).data.user;
+  await sb.from('household_users').delete().eq('household_id', S.hh.id).eq('user_id', u.id);
+  if (channel) sb.removeChannel(channel);
+  LS.set('cotribu-hh', ''); S.hh = null; S.members = new Map(); S.rooms = new Map(); S.tasks = new Map();
+  S.mode = 'welcome'; render();
+}
+
+/* ---------- install (PWA) ---------- */
+let installEvt = null;
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; render(); });
+window.addEventListener('appinstalled', () => { installEvt = null; toast('CoTribu est installée'); render(); });
+if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
+const shareSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
+function installCard(compact){
+  if (isStandalone()) return '';
+  if (compact) { const until = +(LS.get('cotribu-install-later')||0); if (Date.now() < until) return ''; }
+  if (installEvt) return `<div class="card install"><h3>Installer CoTribu</h3><span class="small">Une icône sur ton écran d’accueil, comme une vraie app.</span>
+    <div class="actions"><button class="btn primary" data-act="install">Installer</button>${compact?'<button class="btn soft" data-act="later">Plus tard</button>':''}</div></div>`;
+  if (isIOS()) return `<div class="card install"><h3>Ajoute CoTribu à ton écran d’accueil</h3>
+    <ol class="steps"><li>Touche ${shareSvg} <b>Partager</b> en bas de Safari</li><li>Choisis <b>Sur l’écran d’accueil</b></li><li>Ouvre CoTribu depuis sa nouvelle icône</li></ol>
+    ${compact?'<div class="actions"><button class="btn soft" data-act="later">Plus tard</button></div>':''}</div>`;
+  return '';
+}
+function inviteLink(){ return location.origin + location.pathname + '?code=' + (S.hh ? S.hh.invite_code : ''); }
+async function shareInvite(){
+  const text = `Rejoins notre foyer « ${S.hh.name} » sur CoTribu : ${inviteLink()} (code ${S.hh.invite_code})`;
+  if (navigator.share) { try { await navigator.share({title:'CoTribu', text}); return; } catch(e){ if (e && e.name === 'AbortError') return; } }
+  try { await navigator.clipboard.writeText(text); toast('Invitation copiée'); }
+  catch(e) { const i = document.getElementById('inv-link'); if (i) { i.select(); } toast('Sélectionne le lien pour le copier'); }
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && S.hh) { loadAll(); if (!S.live) subscribe(); } });
+window.addEventListener('online', () => { if (S.hh) { loadAll(); subscribe(); } });
+
+/* ---------- UI helpers ---------- */
+const checkSvg = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent-ink)"><path d="M3 8.5l3.2 3L13 4.5"/></svg>';
+const chevSvg = '<svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>';
+const penSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>';
+const memberColor = m => COLORS[(m && m.color) % COLORS.length] || COLORS[0];
+function avatar(id, cls=''){
+  const m = S.members.get(id);
+  if (!m) return `<span class="av free ${cls}" title="Qui veut">?</span>`;
+  return `<span class="av ${cls}" style="background:${memberColor(m)}" title="${esc(m.name)}">${esc((m.name||'?').trim().charAt(0).toUpperCase())}</span>`;
+}
+const avatars = ids => ids.length ? `<span class="avs">${ids.map(id=>avatar(id)).join('')}</span>` : `<span class="avs">${avatar(null)}</span>`;
+const roomColor = r => { const i = sorted(S.rooms).findIndex(x=>x.id===r.id); return `hsl(${(160 + i*47)%360} 38% 52%)`; };
+const nameOf = id => (S.members.get(id)||{}).name || 'Quelqu’un';
+
+let toastT;
+function toast(msg){ const el = document.getElementById('toast'); el.textContent = msg; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(()=>el.hidden=true, 2600); }
+
+/* ---------- render ---------- */
+function render(){
+  document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-current', b.dataset.v === S.tab ? 'page' : 'false'));
+  document.querySelector('.tabs').hidden = S.mode !== 'app';
+  const v = document.getElementById('view');
+  // keep what the person is typing when data arrives from someone else
+  const a = document.activeElement, keep = a && a.id && v.contains(a) && (a.tagName === 'INPUT') ? {id:a.id, val:a.value, s:a.selectionStart} : null;
+  if (S.mode === 'welcome') v.innerHTML = viewWelcome();
+  else if (S.mode === 'error') v.innerHTML = `<div class="empty" style="margin-top:40px"><h3>Impossible de charger le foyer</h3><span class="muted">Vérifie ta connexion puis réessaie.</span><button class="btn primary" data-act="retry">Réessayer</button></div>`;
+  else if (S.mode !== 'app' || !S.loaded) v.innerHTML = '<div class="loading">Chargement de la maison…</div>';
+  else {
+    if (S.me && !S.members.has(S.me)) S.me = null;
+    v.innerHTML = {today:viewToday, week:viewWeek, home:viewHome, family:viewFamily}[S.tab]();
+  }
+  if (keep) { const f = document.getElementById(keep.id); if (f) { f.value = keep.val; f.focus(); try { f.setSelectionRange(keep.s, keep.s); } catch(e){} } }
+  if (S.sheet) renderSheet();
+}
+function renderHeaderStatus(){
+  const el = document.querySelector('.sync'); if (!el) return;
+  el.className = 'sync' + (S.live ? '' : ' local'); el.lastChild.textContent = S.live ? 'En direct' : 'Reconnexion…';
+}
+
+function header(title){
+  const today = localToday();
+  const sync = `<span class="sync ${S.live?'':'local'}"><i></i>${S.live ? 'En direct' : 'Reconnexion…'}</span>`;
+  return `<div class="head"><div class="row"><span class="eyebrow">${esc(S.meta.name||'Notre maison')} · Semaine ${isoWeek(today)}</span>${sync}</div><h1>${title}</h1></div>`;
+}
+
+function mineFilter(t, st, today){
+  if (S.filter !== 'me' || !S.me) return true;
+  const a = assigneesOn(t, today);
+  if (!a.length) return true;
+  if (a.includes(S.me)) return true;
+  return st.done && t.done && t.done[today] === S.me;
+}
+
+function taskRow(t, st, today, roomName){
+  const who = st.done ? [ (t.done && t.done[today]) || t.lastBy ].filter(Boolean) : assigneesOn(t, today);
+  const bits = [];
+  if (st.late) bits.push(`<span class="tag late">En retard · ${esc(fmtShort(st.since))}</span>`);
+  if (!isRoutine(t.rec)) bits.push(`<span class="tag">${esc(recLabel(t.rec))}</span>`);
+  const whoTxt = st.done ? `Fait par ${esc(nameOf(who[0]))}` : (who.length ? esc(who.map(nameOf).join(', ')) : 'Qui veut');
+  return `<div class="task ${st.done?'done':''}">
+    <button class="check" data-act="toggle" data-id="${t.id}" aria-pressed="${st.done}" aria-label="${st.done?'Décocher':'Cocher'} ${esc(t.name)}">${checkSvg}</button>
+    <div class="body"><span class="name">${esc(t.name)}${roomName ? ` <span class="muted small">· ${esc(roomName)}</span>` : ''}</span><span class="meta">${bits.join('')}<span>${whoTxt}</span></span></div>
+    ${avatars(who)}
+  </div>`;
+}
+
+function viewToday(){
+  const today = localToday();
+  const rooms = sorted(S.rooms);
+  const groups = []; const late = [];
+  let total = 0, done = 0;
+  for (const r of rooms){
+    const items = sorted(new Map([...S.tasks].filter(([,t]) => t.roomId === r.id)))
+      .map(t => ({t, st: todayStatus(t, today)}))
+      .filter(x => x.st.show && mineFilter(x.t, x.st, today));
+    const normal = items.filter(x => !x.st.late);
+    items.filter(x => x.st.late).forEach(x => late.push({...x, room:r}));
+    if (normal.length) groups.push({r, items:normal});
+    total += normal.length; done += normal.filter(x=>x.st.done).length;
+  }
+  const pct = total ? Math.round(done/total*100) : 0;
+  const hasMe = !!S.me;
+  let h = header(cap(fmt(today,{weekday:'long', day:'numeric', month:'long'})));
+  h += `<div class="seg" role="group" aria-label="Filtre">
+      <button data-act="filter" data-v="me" aria-pressed="${S.filter==='me'}">Mes tâches</button>
+      <button data-act="filter" data-v="all" aria-pressed="${S.filter!=='me'}">Tout le foyer</button></div>`;
+  if (!hasMe) {
+    h += `<div class="card"><h3>Qui utilise ce téléphone ?</h3><div class="chips">${sorted(S.members).map(m=>`<button class="chip" data-act="me" data-id="${m.id}">${avatar(m.id)}${esc(m.name)}</button>`).join('')}</div>
+      <span class="muted small">Ton prénom n’est pas là ? Ajoute-le dans l’onglet Foyer.</span></div>`;
+  }
+  h += installCard(true);
+  if (total) {
+    h += `<div class="summary"><div class="ring" style="--p:${pct}"><span class="num">${pct}%</span></div>
+      <div class="txt"><strong class="num">${done} sur ${total} faites</strong><span class="muted small">${done===total ? 'Tout est fait pour aujourd’hui.' : `Encore ${total-done} ${total-done>1?'tâches':'tâche'} dans ${groups.filter(g=>g.items.some(x=>!x.st.done)).length} ${groups.filter(g=>g.items.some(x=>!x.st.done)).length>1?'pièces':'pièce'}.`}</span></div></div>`;
+  }
+  if (late.length){
+    h += `<section class="group late"><div class="ghead"><span class="dot" style="background:var(--late)"></span><h3>En retard</h3><span class="pill late num">${late.length}</span></div>
+      ${late.map(x => taskRow(x.t, x.st, today, x.room.name)).join('')}</section>`;
+  }
+  for (const g of groups){
+    const d = g.items.filter(x=>x.st.done).length, n = g.items.length;
+    h += `<section class="group"><div class="ghead"><span class="dot" style="background:${roomColor(g.r)}"></span><h3>${esc(g.r.name)}</h3><span class="pill ${d===n?'ok':''} num">${d}/${n}</span></div>
+      <div class="bar"><b style="width:${Math.round(d/n*100)}%"></b></div>
+      ${g.items.map(x => taskRow(x.t, x.st, today)).join('')}</section>`;
+  }
+  if (!total && !late.length){
+    h += `<div class="empty"><h3>Rien de prévu aujourd’hui</h3><span class="muted">${S.filter==='me' ? 'Aucune tâche à ton nom. Regarde « Tout le foyer ».' : 'Profitez-en.'}</span></div>`;
+  }
+  // tomorrow preview
+  const tm = addDays(today,1);
+  const tmRooms = rooms.map(r => ({r, n:[...S.tasks.values()].filter(t=>t.roomId===r.id && onDay(t,tm,today)).length})).filter(x=>x.n);
+  if (tmRooms.length){
+    h += `<div class="tomorrow"><span class="eyebrow">Demain, ${esc(fmt(tm,{weekday:'long'}))}</span><div class="chips">${tmRooms.map(x=>`<span class="chip" style="cursor:default"><span class="dot" style="background:${roomColor(x.r)}"></span>${esc(x.r.name)} <span class="muted num">${x.n}</span></span>`).join('')}</div></div>`;
+  }
+  return h;
+}
+
+function viewWeek(){
+  const today = localToday();
+  let h = header('Les 7 prochains jours');
+  h += `<p class="muted small" style="margin:0">Ce qui revient rarement (vitres, draps, four) n’apparaît que le jour où il faut le faire.</p>`;
+  const rooms = sorted(S.rooms);
+  for (let i=0;i<7;i++){
+    const ds = addDays(today,i);
+    const lines = [];
+    rooms.forEach(r => sorted(new Map([...S.tasks].filter(([,t])=>t.roomId===r.id))).forEach(t => { if (onDay(t,ds,today)) lines.push({t,r}); }));
+    const roomNames = [...new Set(lines.map(l=>l.r.name))];
+    const people = [...new Set(lines.flatMap(l=>assigneesOn(l.t,ds)))];
+    h += `<details class="day ${i===0?'today':''}" ${i===0?'open':''}><summary>
+      <span class="dnum"><small>${esc(fmt(ds,{weekday:'short'}).replace('.',''))}</small><b class="num">${ymd(ds)[2]}</b></span>
+      <span class="dsum"><span class="rooms">${roomNames.length ? esc(roomNames.join(' · ')) : '<span class="muted">Journée libre</span>'}</span>
+      <span class="muted small num">${lines.length} ${lines.length>1?'tâches':'tâche'}${i===0?' · aujourd’hui':''}</span></span>
+      ${people.length ? `<span class="avs">${people.map(p=>avatar(p)).join('')}</span>` : ''}${chevSvg}</summary>
+      ${lines.length ? `<div class="dlist">${lines.map(l=>{ const a = assigneesOn(l.t,ds); return `<div class="dline"><span class="dot" style="background:${roomColor(l.r)}"></span><span class="t">${esc(l.t.name)} <span class="r">· ${esc(l.r.name)}${isRoutine(l.t.rec)?'':' · '+esc(recLabel(l.t.rec))}</span></span>${avatars(a)}</div>`; }).join('')}</div>` : ''}
+    </details>`;
+  }
+  return h;
+}
+
+function nextLabel(t, today){
+  if (t.rec.type === 'interval'){ const due = intervalDue(t); return due <= today ? (due < today ? 'En retard' : 'Aujourd’hui') : fmtShort(due); }
+  const n = nextOcc(t.rec, today)[0]; return n ? (n === today ? 'Aujourd’hui' : fmtShort(n)) : '—';
+}
+function assignLabel(t, today){
+  const a = t.assign || {mode:'anyone'};
+  const ids = (a.members||[]).filter(id=>S.members.has(id));
+  if (a.mode === 'rotation' && ids.length) return 'Chacun son tour : ' + ids.map(nameOf).join(' → ');
+  if (a.mode === 'fixed' && ids.length) return ids.map(nameOf).join(', ');
+  return 'Qui veut';
+}
+function viewHome(){
+  const today = localToday();
+  let h = header('La maison');
+  h += `<p class="muted small" style="margin:0">Touchez une tâche pour changer sa fréquence ou qui s’en occupe.</p>`;
+  for (const r of sorted(S.rooms)){
+    const tasks = sorted(new Map([...S.tasks].filter(([,t])=>t.roomId===r.id)));
+    h += `<section class="group room"><div class="ghead"><span class="dot" style="background:${roomColor(r)}"></span><h3>${esc(r.name)}</h3><span class="pill num">${tasks.length}</span>
+      <button class="iconbtn" data-act="editRoom" data-id="${r.id}" aria-label="Modifier ${esc(r.name)}">${penSvg}</button></div>
+      ${tasks.map(t => `<div class="task" data-act="editTask" data-id="${t.id}" role="button" tabindex="0">
+        <div class="body"><span class="name">${esc(t.name)}</span>
+        <span class="meta"><span>${esc(recLabel(t.rec))}</span><span class="tag">${esc(nextLabel(t,today))}</span></span>
+        <span class="meta">${esc(assignLabel(t,today))}</span></div>
+        ${avatars(assigneesOn(t,today))}</div>`).join('')}
+      <div class="addrow"><button class="btn ghost" data-act="newTask" data-room="${r.id}">+ Ajouter une tâche</button></div></section>`;
+  }
+  h += `<button class="btn soft block" data-act="newRoom">+ Nouvelle pièce</button>`;
+  return h;
+}
+
+function viewFamily(){
+  let h = header('Le foyer');
+  const ms = sorted(S.members);
+  h += `<div class="card"><label class="f" for="f-home">Nom du foyer<input type="text" id="f-home" data-ch="homeName" value="${esc(S.meta.name||'')}" placeholder="Notre maison"></label></div>`;
+  h += `<div class="card"><h3>Sur ce téléphone, je suis…</h3><div class="chips">${ms.map(m=>`<button class="chip" data-act="me" data-id="${m.id}" aria-pressed="${S.me===m.id}">${avatar(m.id)}${esc(m.name)}</button>`).join('')}</div>
+    <span class="muted small">Sert au filtre « Mes tâches » et à noter qui a fait quoi. Chaque téléphone choisit le sien.</span></div>`;
+  h += `<div class="card"><h3>Membres</h3>${ms.map(m=>`<div class="mrow">
+      <button class="av lg" style="background:${memberColor(m)};border:0" data-act="color" data-id="${m.id}" aria-label="Changer la couleur de ${esc(m.name)}">${esc((m.name||'?').charAt(0).toUpperCase())}</button>
+      <input type="text" id="m-${m.id}" data-ch="memberName" data-id="${m.id}" value="${esc(m.name)}" aria-label="Prénom">
+      <button class="btn danger ${S.armed==='m'+m.id?'armed':''}" data-act="delMember" data-id="${m.id}">${S.armed==='m'+m.id?'Confirmer':'Retirer'}</button></div>`).join('')}
+    <span class="muted small">Les enfants n’ont pas besoin de compte : ajoutez simplement leur prénom.</span>
+    <button class="btn soft" data-act="addMember">+ Ajouter un membre</button></div>`;
+  h += `<div class="card"><h3>Inviter la famille</h3>
+    <span class="small">Envoie ce lien à chaque membre. En l’ouvrant, il rejoint directement le foyer et voit les mêmes tâches en direct.</span>
+    <div class="code num" aria-label="Code d’invitation">${esc(S.hh.invite_code)}</div>
+    <input type="text" id="inv-link" readonly value="${esc(inviteLink())}" aria-label="Lien d’invitation">
+    <button class="btn primary" data-act="share">Envoyer l’invitation</button></div>`;
+  h += installCard(false);
+  h += `<div class="card"><h3>Repartir de zéro</h3><span class="muted small">Remplace toutes les pièces et tâches par le modèle « Entretien maison standard ». Les membres sont conservés.</span>
+    <button class="btn danger ${S.armed==='reset'?'armed':''}" data-act="reset">${S.armed==='reset'?'Confirmer : tout remplacer':'Recharger le modèle'}</button></div>`;
+  h += `<div class="card"><h3>Ce téléphone</h3><span class="muted small">Si tu changes de téléphone ou effaces les données du navigateur, rejoins simplement le foyer avec le code ci-dessus.</span>
+    <button class="btn danger ${S.armed==='leave'?'armed':''}" data-act="leave">${S.armed==='leave'?'Confirmer : quitter ce foyer':'Quitter ce foyer sur ce téléphone'}</button></div>`;
+  return h;
+}
+
+const logoSvg = '<svg viewBox="0 0 64 64" width="56" height="56" aria-hidden="true"><rect width="64" height="64" rx="16" fill="var(--accent)"/><g fill="var(--accent-ink)" stroke="var(--accent-ink)"><path d="M13 29 32 18l19 11" fill="none" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24.5" cy="34" r="3.3" stroke="none"/><circle cx="32" cy="32" r="4" stroke="none"/><circle cx="39.5" cy="34" r="3.3" stroke="none"/><path d="M19.5 44a5 5 0 0 1 10 0zM26 44a6 6 0 0 1 12 0zM34.5 44a5 5 0 0 1 10 0z" stroke="none"/></g></svg>';
+function viewWelcome(){
+  const names = S.welcome || (S.welcome = ['','']);
+  const seg = `<div class="seg" role="group" aria-label="Choix"><button data-act="wMode" data-v="create" aria-pressed="${S.welcomeMode==='create'}">Créer un foyer</button><button data-act="wMode" data-v="join" aria-pressed="${S.welcomeMode==='join'}">Rejoindre un foyer</button></div>`;
+  let h = `<div class="brand">${logoSvg}<div><h1>CoTribu</h1><span class="muted">La maison, organisée à plusieurs.</span></div></div>${seg}`;
+  if (S.welcomeMode === 'join') {
+    h += `<div class="card"><h3>Code d’invitation</h3><span class="muted small">Demande-le à la personne qui a créé le foyer (onglet Foyer).</span>
+      <input type="text" id="j-code" class="codein num" data-ch="jCode" value="${esc(S.joinCode)}" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC234">
+      <button class="btn primary" data-act="join" ${S.busy?'disabled':''}>${S.busy?'Connexion…':'Rejoindre'}</button></div>`;
+  } else {
+    h += `<div class="card"><label class="f" for="w-home">Nom du foyer<input type="text" id="w-home" data-ch="wHome" value="${esc(S.wHome||'')}" placeholder="Famille Martin"></label></div>
+    <div class="card"><h3>Qui vit ici ?</h3>${names.map((n,i)=>`<input type="text" id="w-m${i}" data-ch="wName" data-i="${i}" value="${esc(n)}" placeholder="${i===0?'Ton prénom':'Prénom '+(i+1)}">`).join('')}
+      <span class="muted small">Les enfants aussi, même sans téléphone.</span>
+      <button class="btn soft" data-act="wAdd">+ Ajouter quelqu’un</button></div>
+    <div class="card"><h3>Modèle « Entretien maison standard »</h3>
+      <span class="small muted">Lundi courses et frigo · mardi cuisine · mercredi chambre enfant · jeudi chambre parents · vendredi salle de bain et WC · dimanche salon. Tout se modifie ensuite.</span>
+      <button class="btn primary" data-act="wGo" ${S.busy?'disabled':''}>${S.busy?'Création…':'Créer le foyer'}</button></div>`;
+  }
+  return h;
+}
+
+/* ---------- sheets ---------- */
+function openSheet(kind){ S.sheet = kind; S.armed = null; renderSheet(); document.getElementById('sheet').hidden = false; }
+function closeSheet(){ S.sheet = null; S.draft = null; S.armed = null; document.getElementById('sheet').hidden = true; }
+
+function draftFromTask(t, roomId){
+  const today = localToday(), mon = mondayOf(today);
+  const base = t ? clone(t) : {id:null, name:'', roomId, rec:{type:'weekly',days:[dow(today)],every:1,anchor:mon}, carry:false, assign:{mode:'anyone',members:[]}};
+  const recs = {
+    weekly:{type:'weekly', days:[dow(today)], every:1, anchor:mon},
+    monthly:{type:'monthly', mode:'nth', nth:1, weekday:dow(today), day:1, every:1, months:[], anchor:today.slice(0,7)},
+    interval:{type:'interval', days:14, anchor:today},
+  };
+  recs[base.rec.type] = {...recs[base.rec.type], ...clone(base.rec)};
+  if (!recs.monthly.months) recs.monthly.months = [];
+  const ivUnit = base.rec.type==='interval' ? (base.rec.days%30===0?30:base.rec.days%7===0?7:1) : 7;
+  return {...base, rtype:base.rec.type, recs, ivUnit, ivN: base.rec.type==='interval' ? base.rec.days/ivUnit : 2,
+    mfreq: (recs.monthly.months.length ? 'months' : String(recs.monthly.every||1)),
+    assign:{mode:base.assign?.mode||'anyone', members:[...(base.assign?.members||[])], anchor:base.assign?.anchor||mon}};
+}
+function draftRec(d){
+  const today = localToday();
+  if (d.rtype === 'interval') return {type:'interval', days:Math.max(1, Math.round((+d.ivN||1)*d.ivUnit)), anchor: d.recs.interval.anchor || today};
+  if (d.rtype === 'monthly'){
+    const m = d.recs.monthly;
+    const r = {type:'monthly', mode:m.mode, anchor:m.anchor||today.slice(0,7), every: d.mfreq==='months' ? 1 : +d.mfreq, months: d.mfreq==='months' ? [...m.months] : []};
+    if (m.mode === 'day') r.day = Math.min(31, Math.max(1, +m.day||1)); else { r.nth = +m.nth; r.weekday = +m.weekday; }
+    return r;
+  }
+  const w = d.recs.weekly; return {type:'weekly', days:[...w.days], every:+w.every||1, anchor:w.anchor||mondayOf(today)};
+}
+
+function renderSheet(){
+  const el = document.getElementById('sheetBody');
+  const focused = document.activeElement && document.activeElement.id;
+  if (S.sheet === 'task') el.innerHTML = sheetTask();
+  else if (S.sheet === 'room') el.innerHTML = sheetRoom();
+  if (focused) { const f = document.getElementById(focused); if (f && el.contains(f)) { f.focus(); if (f.setSelectionRange && f.type==='text') { const l=f.value.length; f.setSelectionRange(l,l); } } }
+}
+
+function sheetTask(){
+  const d = S.draft, today = localToday();
+  const rec = draftRec(d);
+  const seg = (name, v, label, cur) => `<button data-act="${name}" data-v="${v}" aria-pressed="${cur===v}">${label}</button>`;
+  let recFields = '';
+  if (d.rtype === 'weekly'){
+    const w = d.recs.weekly;
+    recFields = `<div class="chips">${WEEK_ORDER.map(i=>`<button class="chip sq" data-act="wday" data-v="${i}" aria-pressed="${w.days.includes(i)}" aria-label="${DAYN[i]}">${DAYL[i]}</button>`).join('')}</div>
+      <div class="frow"><label class="f" for="w-every">Rythme<select id="w-every" data-ch="wEvery">
+        ${[[1,'Toutes les semaines'],[2,'Une semaine sur deux'],[3,'Toutes les 3 semaines'],[4,'Toutes les 4 semaines']].map(([v,l])=>`<option value="${v}" ${+w.every===v?'selected':''}>${l}</option>`).join('')}</select></label>
+      ${+w.every>1 ? `<label class="f" for="w-start">À partir de<select id="w-start" data-ch="wStart">
+        <option value="0" ${w.anchor===mondayOf(today)?'selected':''}>Cette semaine</option>
+        <option value="7" ${w.anchor===addDays(mondayOf(today),7)?'selected':''}>La semaine prochaine</option></select></label>` : ''}</div>`;
+  } else if (d.rtype === 'monthly'){
+    const m = d.recs.monthly;
+    recFields = `<div class="frow"><label class="f" for="mo-mode">Quel jour<select id="mo-mode" data-ch="moMode">
+        <option value="nth" ${m.mode!=='day'?'selected':''}>Un jour de la semaine</option><option value="day" ${m.mode==='day'?'selected':''}>Une date du mois</option></select></label>
+      ${m.mode==='day' ? `<label class="f" for="mo-day">Date<input type="number" id="mo-day" data-ch="moDay" min="1" max="31" value="${m.day||1}" inputmode="numeric"></label>`
+      : `<label class="f" for="mo-nth">Lequel<select id="mo-nth" data-ch="moNth">${[[1,'1er'],[2,'2e'],[3,'3e'],[4,'4e'],[-1,'Dernier']].map(([v,l])=>`<option value="${v}" ${+m.nth===v?'selected':''}>${l}</option>`).join('')}</select></label>
+         <label class="f" for="mo-wd">Jour<select id="mo-wd" data-ch="moWd">${WEEK_ORDER.map(i=>`<option value="${i}" ${+m.weekday===i?'selected':''}>${DAYN[i]}</option>`).join('')}</select></label>`}</div>
+      <label class="f" for="mo-freq">Quels mois<select id="mo-freq" data-ch="moFreq">
+        ${[['1','Tous les mois'],['2','Tous les 2 mois'],['3','Tous les 3 mois'],['6','Tous les 6 mois'],['months','Choisir les mois…']].map(([v,l])=>`<option value="${v}" ${d.mfreq===v?'selected':''}>${l}</option>`).join('')}</select></label>
+      ${d.mfreq==='months' ? `<div class="chips">${MONS.map((l,i)=>`<button class="chip sq" data-act="mmonth" data-v="${i+1}" aria-pressed="${m.months.includes(i+1)}">${l}</button>`).join('')}</div>` : ''}`;
+  } else {
+    recFields = `<div class="frow"><label class="f" for="iv-n">Tous les<input type="number" id="iv-n" data-ch="ivN" min="1" max="365" value="${d.ivN}" inputmode="numeric"></label>
+      <label class="f" for="iv-unit">&nbsp;<select id="iv-unit" data-ch="ivUnit"><option value="1" ${d.ivUnit===1?'selected':''}>jours</option><option value="7" ${d.ivUnit===7?'selected':''}>semaines</option><option value="30" ${d.ivUnit===30?'selected':''}>mois</option></select></label></div>
+      <span class="info">Compté à partir de la dernière fois où c’est fait. Faites-le avec 5 jours de retard, le prochain rappel part de ce jour-là.</span>`;
+  }
+  // preview
+  let prev;
+  if (rec.type === 'interval') prev = `Prochaine fois : <b>${esc(fmtShort(d.id ? intervalDue({...d, rec}) : (rec.anchor||today)))}</b>, puis ${esc(recLabel(rec).toLowerCase())}.`;
+  else { const n = nextOcc(rec, today, 3); prev = n.length ? `Prochaines fois : <b>${n.map(fmtShort).map(esc).join('</b>, <b>')}</b>` : 'Choisissez au moins un jour.'; }
+  // assignment
+  const a = d.assign; const ms = sorted(S.members);
+  const memberChips = ms.map(m => { const pos = a.members.indexOf(m.id); return `<button class="chip" data-act="amember" data-id="${m.id}" aria-pressed="${pos>=0}">${a.mode==='rotation' && pos>=0 ? `<span class="n">${pos+1}</span>` : avatar(m.id)}${esc(m.name)}</button>`; }).join('');
+  let rotPrev = '';
+  if (a.mode === 'rotation' && a.members.length > 1){
+    const mon = mondayOf(today);
+    rotPrev = `<div class="preview">${[0,1,2].map(k=>{ const w = Math.floor((idx(addDays(mon,7*k)) - idx(a.anchor))/7); return `Semaine ${isoWeek(addDays(mon,7*k))} → <b>${esc(nameOf(a.members[mod(w,a.members.length)]))}</b>`; }).join('<br>')}</div>`;
+  }
+  return `<div class="grab"></div>
+    <h2>${d.id ? 'Modifier la tâche' : 'Nouvelle tâche'}</h2>
+    <div class="sect"><label class="f" for="t-name">Tâche<input type="text" id="t-name" data-ch="tName" value="${esc(d.name)}" placeholder="Ex. Nettoyer les vitres"></label>
+      <label class="f" for="t-room">Pièce<select id="t-room" data-ch="tRoom">${sorted(S.rooms).map(r=>`<option value="${r.id}" ${r.id===d.roomId?'selected':''}>${esc(r.name)}</option>`).join('')}</select></label></div>
+    <div class="sect"><span class="eyebrow">Quand</span>
+      <div class="seg">${seg('rtype','weekly','Jours fixes',d.rtype)}${seg('rtype','monthly','Chaque mois',d.rtype)}${seg('rtype','interval','Après un délai',d.rtype)}</div>
+      ${recFields}
+      <div class="preview">${prev}</div></div>
+    ${d.rtype !== 'interval' ? `<div class="sect"><span class="eyebrow">Si elle n’est pas faite</span>
+      <div class="seg">${seg('carry','1','Reste en retard',d.carry?'1':'0')}${seg('carry','0','Attend la prochaine fois',d.carry?'1':'0')}</div>
+      <span class="info">${d.carry ? 'Elle reste dans « En retard » jusqu’à ce que quelqu’un la coche. Idéal pour ce qui est rare.' : 'Elle disparaît et revient à la prochaine date. Idéal pour ce qui est fréquent.'}</span></div>` : ''}
+    <div class="sect"><span class="eyebrow">Qui s’en occupe</span>
+      <div class="seg">${seg('amode','fixed','Toujours',a.mode)}${seg('amode','rotation','Chacun son tour',a.mode)}${seg('amode','anyone','Qui veut',a.mode)}</div>
+      ${a.mode !== 'anyone' ? `<div class="chips">${memberChips}</div>` : '<span class="info">Visible par tout le monde, le premier qui la fait la coche.</span>'}
+      ${a.mode==='rotation' ? `<span class="info">L’ordre des numéros donne le tour, une personne par semaine.</span>${rotPrev}` : ''}</div>
+    <div class="actions"><button class="btn primary" data-act="saveTask">Enregistrer</button><button class="btn soft" data-act="close">Annuler</button></div>
+    ${d.id ? `<button class="btn danger ${S.armed==='task'?'armed':''}" data-act="delTask">${S.armed==='task'?'Confirmer la suppression':'Supprimer cette tâche'}</button>` : ''}`;
+}
+
+function sheetRoom(){
+  const d = S.draft; const ms = sorted(S.members);
+  const n = [...S.tasks.values()].filter(t=>t.roomId===d.id).length;
+  const a = d.assign;
+  return `<div class="grab"></div><h2>${d.id ? 'Modifier la pièce' : 'Nouvelle pièce'}</h2>
+    <label class="f" for="r-name">Nom<input type="text" id="r-name" data-ch="rName" value="${esc(d.name)}" placeholder="Ex. Bureau"></label>
+    <div class="actions"><button class="btn primary" data-act="saveRoom">Enregistrer</button><button class="btn soft" data-act="close">Annuler</button></div>
+    ${d.id && n ? `<div class="sect"><span class="eyebrow">Répartir toute la pièce</span>
+      <div class="seg"><button data-act="ramode" data-v="fixed" aria-pressed="${a.mode==='fixed'}">Toujours</button><button data-act="ramode" data-v="rotation" aria-pressed="${a.mode==='rotation'}">Chacun son tour</button><button data-act="ramode" data-v="anyone" aria-pressed="${a.mode==='anyone'}">Qui veut</button></div>
+      ${a.mode!=='anyone' ? `<div class="chips">${ms.map(m=>{const pos=a.members.indexOf(m.id); return `<button class="chip" data-act="ramember" data-id="${m.id}" aria-pressed="${pos>=0}">${a.mode==='rotation'&&pos>=0?`<span class="n">${pos+1}</span>`:avatar(m.id)}${esc(m.name)}</button>`;}).join('')}</div>` : ''}
+      <button class="btn soft" data-act="applyRoom">Appliquer aux ${n} tâches</button></div>` : ''}
+    ${d.id ? `<button class="btn danger ${S.armed==='room'?'armed':''}" data-act="delRoom">${S.armed==='room'?`Confirmer : supprimer la pièce et ses ${n} tâches`:'Supprimer la pièce'}</button>` : ''}`;
+}
+
+/* ---------- actions ---------- */
+function toggleTask(id){
+    const today = localToday();
+  const t = clone(S.tasks.get(id)); if (!t) return;
+  t.done = t.done || {};
+  const st = todayStatus(t, today);
+  const who = S.me || assigneesOn(t, today)[0] || null;
+  if (st.done){
+    delete t.done[today];
+    const past = Object.keys(t.done).sort();
+    t.lastDone = past.at(-1) || null; t.lastBy = t.lastDone ? t.done[t.lastDone] : null;
+  } else {
+    t.done[today] = who || 'x'; t.lastDone = today; t.lastBy = who;
+    const keys = Object.keys(t.done).sort(); while (keys.length > 40) delete t.done[keys.shift()];
+  }
+  put('tasks', t); render();
+}
+
+const handlers = {
+  tab: el => { S.tab = el.dataset.v; S.armed = null; render(); window.scrollTo(0,0); },
+  filter: el => { S.filter = el.dataset.v; LS.set('cotribu-filter', S.filter); render(); },
+  me: el => setMe(el.dataset.id),
+  retry: () => { S.mode = 'loading'; render(); boot(); },
+  wMode: el => { S.welcomeMode = el.dataset.v; render(); },
+  join: () => joinHousehold(),
+  share: () => shareInvite(),
+  install: async () => { if (!installEvt) return; installEvt.prompt(); try { await installEvt.userChoice; } catch(e){} installEvt = null; render(); },
+  later: () => { LS.set('cotribu-install-later', String(Date.now() + 3*DAY)); render(); },
+  leave: () => { if (S.armed !== 'leave') { S.armed = 'leave'; render(); return; } S.armed = null; leaveHousehold(); },
+  toggle: el => toggleTask(el.dataset.id),
+  close: () => closeSheet(),
+  editTask: el => { S.draft = draftFromTask(S.tasks.get(el.dataset.id)); openSheet('task'); },
+  newTask: el => { S.draft = draftFromTask(null, el.dataset.room); openSheet('task'); },
+  rtype: el => { S.draft.rtype = el.dataset.v; renderSheet(); },
+  carry: el => { S.draft.carry = el.dataset.v === '1'; renderSheet(); },
+  wday: el => { const w = S.draft.recs.weekly, v = +el.dataset.v; w.days = w.days.includes(v) ? w.days.filter(x=>x!==v) : [...w.days, v]; renderSheet(); },
+  mmonth: el => { const m = S.draft.recs.monthly, v = +el.dataset.v; m.months = m.months.includes(v) ? m.months.filter(x=>x!==v) : [...m.months, v]; renderSheet(); },
+  amode: el => { S.draft.assign.mode = el.dataset.v; renderSheet(); },
+  amember: el => { const a = S.draft.assign, id = el.dataset.id; a.members = a.members.includes(id) ? a.members.filter(x=>x!==id) : [...a.members, id]; renderSheet(); },
+  saveTask: () => {
+    const d = S.draft; const name = d.name.trim();
+    if (!name) { toast('Donnez un nom à la tâche.'); document.getElementById('t-name')?.focus(); return; }
+    const rec = draftRec(d);
+    if (rec.type==='weekly' && !rec.days.length) { toast('Choisissez au moins un jour.'); return; }
+    if (rec.type==='monthly' && d.mfreq==='months' && !rec.months.length) { toast('Choisissez au moins un mois.'); return; }
+    const old = d.id ? S.tasks.get(d.id) : null;
+    const today = localToday();
+    const siblings = [...S.tasks.values()].filter(t=>t.roomId===d.roomId);
+    const t = {
+      id: d.id || uid('t'), roomId:d.roomId, name, rec, carry: rec.type==='interval' ? true : !!d.carry,
+      assign:{mode:d.assign.mode, members: d.assign.mode==='anyone' ? [] : d.assign.members, anchor:d.assign.anchor || mondayOf(today)},
+      order: old ? old.order : (Math.max(0,...siblings.map(s=>s.order||0))+1),
+      createdAt: old ? old.createdAt : today, lastDone: old ? old.lastDone : null, lastBy: old ? (old.lastBy||null) : null, done: old ? clone(old.done||{}) : {},
+    };
+    if (old && JSON.stringify(old.rec) !== JSON.stringify(rec)) t.createdAt = today; // new rule: no retroactive lateness
+    put('tasks', t); closeSheet(); render(); toast(d.id ? 'Tâche modifiée' : 'Tâche ajoutée');
+  },
+  delTask: () => { if (S.armed !== 'task') { S.armed = 'task'; renderSheet(); return; } del('tasks', S.draft.id); closeSheet(); render(); toast('Tâche supprimée'); },
+  newRoom: () => { S.draft = {id:null, name:'', assign:{mode:'fixed', members:[]}}; openSheet('room'); },
+  editRoom: el => { const r = S.rooms.get(el.dataset.id); S.draft = {...clone(r), assign:{mode:'rotation', members:[]}}; openSheet('room'); },
+  ramode: el => { S.draft.assign.mode = el.dataset.v; renderSheet(); },
+  ramember: el => { const a = S.draft.assign, id = el.dataset.id; a.members = a.members.includes(id) ? a.members.filter(x=>x!==id) : [...a.members, id]; renderSheet(); },
+  applyRoom: () => {
+    const a = S.draft.assign;
+    if (a.mode !== 'anyone' && !a.members.length) { toast('Choisissez au moins une personne.'); return; }
+    const mon = mondayOf(localToday());
+    putMany('tasks', [...S.tasks.values()].filter(t=>t.roomId===S.draft.id).map(t => { const c = clone(t); c.assign = {mode:a.mode, members: a.mode==='anyone'?[]:[...a.members], anchor:mon}; return c; }));
+    closeSheet(); render(); toast('Répartition appliquée');
+  },
+  saveRoom: () => {
+    const d = S.draft; const name = (d.name||'').trim(); if (!name) { toast('Donnez un nom à la pièce.'); return; }
+    const old = d.id ? S.rooms.get(d.id) : null;
+    put('rooms', {id: d.id || uid('r'), name, order: old ? old.order : Math.max(0,...[...S.rooms.values()].map(r=>r.order||0))+1});
+    closeSheet(); render(); toast(d.id ? 'Pièce renommée' : 'Pièce ajoutée');
+  },
+  delRoom: () => {
+    if (S.armed !== 'room') { S.armed = 'room'; renderSheet(); return; }
+    const id = S.draft.id; [...S.tasks.values()].filter(t=>t.roomId===id).forEach(t=>del('tasks', t.id)); del('rooms', id);
+    closeSheet(); render(); toast('Pièce supprimée');
+  },
+  color: el => { const m = clone(S.members.get(el.dataset.id)); m.color = ((m.color||0)+1) % COLORS.length; put('members', m); render(); },
+  addMember: () => { const ms = sorted(S.members); const m = {id:uid('m'), name:'Nouveau membre', color: ms.length % COLORS.length, order:(Math.max(-1,...ms.map(x=>x.order||0))+1)}; put('members', m); render(); setTimeout(()=>{ const i = document.getElementById('m-'+m.id); if (i){ i.focus(); i.select(); } }, 30); },
+  delMember: el => { const k = 'm'+el.dataset.id; if (S.armed !== k) { S.armed = k; render(); return; } S.armed = null; del('members', el.dataset.id); if (S.me === el.dataset.id) { S.me = null; } render(); },
+  reset: async () => {
+    if (S.armed !== 'reset') { S.armed = 'reset'; render(); return; }
+    S.armed = null;
+    const names = sorted(S.members);
+    const tpl = buildTemplate(names.length ? names.map(m=>m.name) : ['Moi'], localToday());
+    const map = {}; tpl.members.forEach((m,i)=>{ map[m.id] = names[i] ? names[i].id : m.id; });
+    tpl.tasks.forEach(t=>{ t.assign.members = t.assign.members.map(id=>map[id]); });
+    const {error} = await sb.from('docs').delete().eq('household_id', S.hh.id).in('col', ['rooms','tasks']);
+    if (error) { toast(explain(error)); return; }
+    S.rooms = new Map(); S.tasks = new Map();
+    if (!names.length) await putMany('members', tpl.members);
+    await putMany('rooms', tpl.rooms); await putMany('tasks', tpl.tasks);
+    render(); toast('Modèle rechargé');
+  },
+  wAdd: () => { S.welcome.push(''); render(); },
+  wGo: () => createHousehold(),
+};
+const changes = {
+  homeName: el => putMeta({...S.meta, name: el.value.trim() || 'Notre maison'}),
+  memberName: el => { const m = clone(S.members.get(el.dataset.id)); const v = el.value.trim(); if (!v || v === m.name) return; m.name = v; put('members', m); render(); },
+  tName: el => { S.draft.name = el.value; },
+  tRoom: el => { S.draft.roomId = el.value; },
+  rName: el => { S.draft.name = el.value; },
+  wEvery: el => { S.draft.recs.weekly.every = +el.value; renderSheet(); },
+  wStart: el => { S.draft.recs.weekly.anchor = addDays(mondayOf(localToday()), +el.value); renderSheet(); },
+  moMode: el => { S.draft.recs.monthly.mode = el.value; renderSheet(); },
+  moDay: el => { S.draft.recs.monthly.day = +el.value; renderSheet(); },
+  moNth: el => { S.draft.recs.monthly.nth = +el.value; renderSheet(); },
+  moWd: el => { S.draft.recs.monthly.weekday = +el.value; renderSheet(); },
+  moFreq: el => { S.draft.mfreq = el.value; renderSheet(); },
+  ivN: el => { S.draft.ivN = el.value; renderSheet(); },
+  ivUnit: el => { S.draft.ivUnit = +el.value; renderSheet(); },
+  wHome: el => { S.wHome = el.value; },
+  wName: el => { S.welcome[+el.dataset.i] = el.value; },
+  jCode: el => { const v = el.value.toUpperCase().replace(/[^A-Z0-9]/g,''); if (v !== el.value) el.value = v; S.joinCode = v; },
+};
+const liveInputs = new Set(['tName','rName','wHome','wName','jCode']);
+
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]'); if (!el) return;
+  const h = handlers[el.dataset.act]; if (h) { e.preventDefault(); h(el); }
+});
+document.addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[role="button"][data-act]')) { e.preventDefault(); handlers[e.target.dataset.act](e.target); }
+  if (e.key === 'Escape' && S.sheet) closeSheet();
+});
+document.addEventListener('input', e => { const k = e.target.dataset && e.target.dataset.ch; if (k && liveInputs.has(k)) changes[k](e.target); });
+document.addEventListener('change', e => { const k = e.target.dataset && e.target.dataset.ch; if (k && !liveInputs.has(k)) changes[k](e.target); });
+
+// refresh at midnight / when returning to the app
+let lastDay = localToday();
+setInterval(() => { if (localToday() !== lastDay) { lastDay = localToday(); render(); } }, 60000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && localToday() !== lastDay) { lastDay = localToday(); render(); } });
+
+boot();
+</script>
+
+</body>
+</html>
