@@ -1,7 +1,7 @@
 // @ts-nocheck
 // CoTribu — fonction serveur « cotribu-ai » (réservée aux foyers Premium, sauf la création de la maison)
 // Modes : parse (phrase ou photo → ajouts), menus, balance (répartition), setup (maison auto), album
-// Secret à définir : ANTHROPIC_API_KEY. À déployer avec « Verify JWT » désactivé (la fonction vérifie elle-même l'utilisateur).
+// Secrets : GEMINI_API_KEY (Google AI Studio) et/ou ANTHROPIC_API_KEY ; AI_PROVIDER = gemini | claude (facultatif), GEMINI_MODEL (facultatif). À déployer avec « Verify JWT » désactivé (la fonction vérifie elle-même l'utilisateur).
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const MODEL = "claude-haiku-4-5-20251001";
@@ -143,6 +143,45 @@ Crée entre 5 et 10 pièces et 25 à 45 routines ménagères réalistes pour ce 
 Écris l'album de l'année de la famille « ${ctx.householdName || "notre famille"} » à partir de ses souvenirs. Ton chaleureux, simple, sans exagération ni mièvrerie. Ne cite que des faits présents dans les souvenirs. Un chapitre par mois qui contient des souvenirs, avec leurs identifiants.`,
 };
 
+// Fournisseur d'IA : AI_PROVIDER = "gemini" ou "claude" (par défaut : gemini si GEMINI_API_KEY existe, sinon claude)
+function provider() {
+  const p = (Deno.env.get("AI_PROVIDER") || "").toLowerCase();
+  if (p === "gemini" || p === "claude") return p;
+  return Deno.env.get("GEMINI_API_KEY") ? "gemini" : "claude";
+}
+async function ask(system, content, tool) {
+  return provider() === "gemini" ? gemini(system, content, tool) : claude(system, content, tool);
+}
+
+async function gemini(system, content, tool) {
+  const key = Deno.env.get("GEMINI_API_KEY");
+  if (!key) throw Object.assign(new Error("ia_non_configuree"), { status: 503 });
+  const model = Deno.env.get("GEMINI_MODEL") || "gemini-flash-latest";
+  const parts = content.map((c) => c.type === "image"
+    ? { inline_data: { mime_type: c.source.media_type, data: c.source.data } }
+    : { text: c.text });
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+    method: "POST",
+    headers: { "x-goog-api-key": key, "content-type": "application/json" },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: system }] },
+      contents: [{ role: "user", parts }],
+      tools: [{ functionDeclarations: [{ name: tool.name, description: tool.description, parameters: tool.input_schema }] }],
+      toolConfig: { functionCallingConfig: { mode: "ANY", allowedFunctionNames: [tool.name] } },
+      generationConfig: { temperature: 0.4, maxOutputTokens: 8192 },
+    }),
+  });
+  if (!res.ok) {
+    const t = await res.text();
+    console.error("gemini", res.status, t);
+    throw Object.assign(new Error(res.status === 429 || res.status === 503 ? "ia_occupee" : "ia_erreur"), { status: 502 });
+  }
+  const data = await res.json();
+  const fc = (((data.candidates || [])[0] || {}).content || {}).parts?.find((p) => p.functionCall);
+  if (!fc) throw Object.assign(new Error("ia_erreur"), { status: 502 });
+  return fc.functionCall.args || {};
+}
+
 async function claude(system, content, tool) {
   const key = Deno.env.get("ANTHROPIC_API_KEY");
   if (!key) throw Object.assign(new Error("ia_non_configuree"), { status: 503 });
@@ -196,7 +235,7 @@ Deno.serve(async (req) => {
     }
     content.push({ type: "text", text: String(body.input || "").slice(0, 20000) || "Analyse cette image." });
 
-    const result = await claude(PROMPTS[mode](ctx), content, TOOLS[mode]);
+    const result = await ask(PROMPTS[mode](ctx), content, TOOLS[mode]);
     await db.from("ai_usage").upsert({ household_id: hid, month: usageKey, calls: calls + 1 });
     return json({ result, used: calls + 1, limit: MONTHLY_LIMIT });
   } catch (e) {

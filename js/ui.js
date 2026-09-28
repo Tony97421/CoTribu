@@ -115,6 +115,8 @@ SHEETS.memberEdit = () => {
         <label class="btn soft filebtn">${icon('camera',18)}${S.uploading ? 'Envoi…' : (d.photo ? 'Changer la photo' : 'Ajouter une photo')}<input type="file" id="me-photo" accept="image/*" data-ch="mePhoto" ${S.uploading?'disabled':''}></label>
         ${d.photo ? `<button class="btn ghost sm" data-act="meNoPhoto">Retirer la photo</button>` : ''}</div></div>
     <label class="f" for="me-name2">Prénom<input type="text" id="me-name2" data-ch="meName2" value="${esc(d.name)}"></label>
+    <label class="toggle"><input type="checkbox" id="me-kid" data-ch="meKid" ${d.kid?'checked':''}>C’est un enfant</label>
+    <span class="info" style="margin-top:-8px">Quand un parent coche une tâche d’un enfant, les points vont à l’enfant.</span>
     <div class="sect"><span class="eyebrow">Couleur</span><div class="chips">${COLORS.map((c,i) => `<button class="chip sq" data-act="meColor" data-v="${i}" aria-pressed="${(d.color||0)===i}" aria-label="Couleur ${i+1}" style="background:${c};border-color:${(d.color||0)===i?'var(--ink)':c};min-height:40px"></button>`).join('')}</div></div>
     <div class="actions"><button class="btn primary" data-act="saveMemberEdit" ${S.uploading?'disabled':''}>Enregistrer</button><button class="btn soft" data-act="close">Annuler</button></div>`;
 };
@@ -140,6 +142,7 @@ Object.assign(H, {
 });
 Object.assign(CH, {
   meName2: el => { S.draft.name = el.value; },
+  meKid: el => { S.draft.kid = el.checked; },
   mePhoto: async el => {
     const f = el.files && el.files[0]; if (!f) return;
     S.uploading = true; renderSheet();

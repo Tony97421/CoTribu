@@ -36,14 +36,20 @@ function toggleTask(id){
   const t = clone(S.tasks.get(id)); if (!t) return;
   t.done = t.done || {};
   const st = todayStatus(t, today);
-  const who = S.me || assigneesOn(t, today)[0] || null;
+  const a = assigneesOn(t, today);
+  // qui reçoit le mérite (et les points) : moi si la tâche est à moi ; l'enfant si c'est sa tâche (il n'a pas forcément de téléphone)
+  const kidOwner = a.length === 1 && (S.members.get(a[0]) || {}).kid;
+  const who = (S.me && a.includes(S.me)) ? S.me : kidOwner ? a[0] : (S.me || a[0] || null);
   if (st.done){
+    const prev = t.done[today];
     delete t.done[today];
     const past = Object.keys(t.done).sort();
     t.lastDone = past.at(-1) || null; t.lastBy = t.lastDone ? t.done[t.lastDone] : null;
+    if (typeof removeTaskPoints === 'function') removeTaskPoints(prev, t, today);
   } else {
     t.done[today] = who || 'x'; t.lastDone = today; t.lastBy = who;
     const keys = Object.keys(t.done).sort(); while (keys.length > 40) delete t.done[keys.shift()];
+    if (who && typeof addTaskPoints === 'function') addTaskPoints(who, t, today);
   }
   put('tasks', t); render();
 }
@@ -252,6 +258,9 @@ SHEETS.task = () => {
     ${d.rtype !== 'interval' ? `<div class="sect u-home"><span class="eyebrow">Si elle n’est pas faite</span>
       <div class="seg">${sg('carry','1','Reste en retard',d.carry?'1':'0')}${sg('carry','0','Attend la prochaine fois',d.carry?'1':'0')}</div>
       <span class="info">${d.carry ? 'Elle reste dans « En retard » jusqu’à ce que quelqu’un la coche. Idéal pour ce qui est rare.' : 'Elle disparaît et revient à la prochaine date. Idéal pour ce qui est fréquent.'}</span></div>` : ''}
+    <div class="sect u-shop"><span class="eyebrow">Points gagnés</span>
+      <div class="chips">${[0,1,2,3,5,10].map(n => `<button class="chip sq" data-act="tPoints" data-v="${n}" aria-pressed="${(d.points ?? 1)===n}">${n}</button>`).join('')}</div>
+      <span class="info">Ce que rapporte la tâche à celui qui la fait (Plus → Points et récompenses).</span></div>
     <div class="sect u-home"><span class="eyebrow">Qui s’en occupe</span>
       <div class="seg">${sg('amode','fixed','Toujours',a.mode)}${sg('amode','rotation','Chacun son tour',a.mode)}${sg('amode','anyone','Qui veut',a.mode)}</div>
       ${a.mode !== 'anyone' ? `<div class="chips">${memberChips}</div>` : '<span class="info">Visible par tout le monde, le premier qui la fait la coche.</span>'}
@@ -284,6 +293,7 @@ Object.assign(H, {
   newTask: el => { if (!S.rooms.size) { toast('Crée d’abord une pièce.'); return; } S.draft = draftFromTask(null, el.dataset.room); openSheet('task'); },
   rtype: el => { S.draft.rtype = el.dataset.v; renderSheet(); },
   tmode: el => { S.draft.tmode = el.dataset.v; renderSheet(); },
+  tPoints: el => { S.draft.points = +el.dataset.v; renderSheet(); },
   carry: el => { S.draft.carry = el.dataset.v === '1'; renderSheet(); },
   wday: el => { const w = S.draft.recs.weekly, v = +el.dataset.v; w.days = w.days.includes(v) ? w.days.filter(x=>x!==v) : [...w.days, v]; renderSheet(); },
   mmonth: el => { const m = S.draft.recs.monthly, v = +el.dataset.v; m.months = m.months.includes(v) ? m.months.filter(x=>x!==v) : [...m.months, v]; renderSheet(); },
@@ -300,7 +310,7 @@ Object.assign(H, {
     const siblings = [...S.tasks.values()].filter(t=>t.roomId===d.roomId);
     const t = {
       id: d.id || uid('t'), roomId:d.roomId, name, rec, carry: rec.type==='interval' ? true : !!d.carry,
-      time: d.tmode === 'none' || !d.tat ? null : {mode:d.tmode, at:d.tat},
+      time: d.tmode === 'none' || !d.tat ? null : {mode:d.tmode, at:d.tat}, points: d.points ?? 1,
       assign:{mode:d.assign.mode, members: d.assign.mode==='anyone' ? [] : d.assign.members, anchor:d.assign.anchor || mondayOf(today)},
       order: old ? old.order : (Math.max(0,...siblings.map(s=>s.order||0))+1),
       createdAt: old ? old.createdAt : today, lastDone: old ? old.lastDone : null, lastBy: old ? (old.lastBy||null) : null, done: old ? clone(old.done||{}) : {},

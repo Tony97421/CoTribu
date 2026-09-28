@@ -25,6 +25,11 @@ VIEWS.today = () => {
     ${tasks.length > shown.length ? `<button class="btn ghost sm" data-act="tab" data-v="maison">Voir les ${tasks.length} tâches</button>` : ''}
     <button class="addline" data-act="newTask">${icon('plus',20)}Ajouter une tâche</button></div>`;
 
+  // Points de la semaine
+  const champs = sorted(S.members).map(m => ({m, w: weekPts(m)})).filter(x => x.w > 0).sort((a,b) => b.w - a.w);
+  if (champs.length) h += `<div class="ucard u-shop"><button class="chead" data-act="plusGo" data-v="points"><span class="bubble sm">${icon('star',16)}</span><h3>Points de la semaine</h3><span class="spacer"></span><span class="go">${icon('chevron-right',18)}</span></button>
+    <div class="chips">${champs.slice(0,4).map((x,i) => `<span class="chip" style="cursor:default">${avatar(x.m.id)}${esc(x.m.name)} <b class="num">${x.w}</b>${i===0?' ★':''}</span>`).join('')}</div></div>`;
+
   // Planning + Repas
   const evs = eventsOn(today);
   const meals = mealsOn(today);
@@ -66,9 +71,10 @@ VIEWS.plus = () => {
   if (S.sub.plus === 'proches') return viewProches();
   if (S.sub.plus === 'premium') return viewPremium();
   if (S.sub.plus === 'album') return viewAlbum();
+  if (S.sub.plus === 'points') return viewPoints();
   let h = ptitle('Plus', esc(S.meta.name || 'Notre maison'), syncBadge());
   h += `<div class="menu">
-    ${[['premium','crown','CoTribu Premium', isPremium() ? premiumUntilLabel() : 'L’IA qui fait le travail à votre place','u-warm'],['repas','utensils','Repas','Le menu de la semaine','u-shop'],['souvenirs','heart','Souvenirs','Photos et moments importants','u-mem'],['proches','hand-heart','Proches','Grands-parents, nounou : demandes de garde','u-lav'],['foyer','users','Foyer et famille','Membres, invitation, rappels, Google Agenda','u-home']]
+    ${[['premium','crown','CoTribu Premium', isPremium() ? premiumUntilLabel() : 'L’IA qui fait le travail à votre place','u-warm'],['points','star','Points et récompenses','Les tâches faites rapportent des points','u-shop'],['repas','utensils','Repas','Le menu de la semaine','u-shop'],['souvenirs','heart','Souvenirs','Photos et moments importants','u-mem'],['proches','hand-heart','Proches','Grands-parents, nounou : demandes de garde','u-lav'],['foyer','users','Foyer et famille','Membres, invitation, rappels, Google Agenda','u-home']]
       .map(([v,ic,t,s,u]) => `<button class="lrow ${u}" data-act="plusGo" data-v="${v}"><span class="bubble">${icon(ic,20)}</span><span class="body"><span class="t">${t}</span><span class="s">${s}</span></span>${icon('chevron-right',18)}</button>`).join('')}</div>`;
   h += installCard(false);
   return h;

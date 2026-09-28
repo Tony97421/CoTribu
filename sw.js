@@ -1,10 +1,10 @@
 // CoTribu — service worker : cache hors ligne de l'app + réception des notifications.
 // Changer VERSION à chaque mise en ligne.
-const VERSION = 'cotribu-v7';
+const VERSION = 'cotribu-v8';
 const SHELL = [
   './', './index.html', './manifest.webmanifest', './css/app.css',
   './js/icons.js', './js/core.js', './js/store.js', './js/ui.js', './js/maison.js', './js/courses.js',
-  './js/planning.js', './js/extras.js', './js/accueil.js', './js/push.js', './js/proches.js', './js/premium.js', './js/ai.js',
+  './js/planning.js', './js/extras.js', './js/accueil.js', './js/push.js', './js/proches.js', './js/premium.js', './js/ai.js', './js/points.js',
   './vendor/supabase-2.117.2.js',
   './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/favicon.png', './icons/badge.png',
 ];

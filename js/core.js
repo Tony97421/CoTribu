@@ -128,10 +128,10 @@ function onDay(t, ds, today){
 }
 
 /* ---------- state ---------- */
-const COLS = ['members','rooms','tasks','items','events','meals','memories','proches','requests','albums'];
+const COLS = ['members','rooms','tasks','items','events','meals','memories','proches','requests','albums','rewards'];
 const S = {
   members:new Map(), rooms:new Map(), tasks:new Map(), items:new Map(), events:new Map(), meals:new Map(), memories:new Map(),
-  proches:new Map(), requests:new Map(), albums:new Map(),
+  proches:new Map(), requests:new Map(), albums:new Map(), rewards:new Map(),
   meta:{name:'Notre maison'},
   mode:'loading', loaded:false, tab:'today', filter:'all', me:null, draft:null, sheet:null, armed:null,
   sub:{maison:'jour', courses:'liste', planning:'semaine', plus:null},
