@@ -23,7 +23,7 @@ create table if not exists public.household_users (
 -- 3. Données du foyer : membres, pièces, tâches (documents JSON) -----------
 create table if not exists public.docs (
   household_id uuid not null references public.households(id) on delete cascade,
-  col          text not null check (col in ('members','rooms','tasks')),
+  col          text not null check (col in ('members','rooms','tasks','items','events','meals','memories')),
   id           text not null,
   data         jsonb not null,
   updated_at   timestamptz not null default now(),
@@ -102,3 +102,5 @@ grant execute on function public.join_household(text)   to authenticated;
 do $$ begin
   alter publication supabase_realtime add table public.docs;
 exception when duplicate_object then null; end $$;
+
+-- 7. Courses, planning, repas, souvenirs : voir migration-2.sql (à lancer aussi)

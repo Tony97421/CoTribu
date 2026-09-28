@@ -6,7 +6,7 @@ App web installable (PWA), hébergée sur GitHub Pages, données dans Supabase.
 
 ## Mise en place (une seule fois)
 
-1. **Supabase → SQL Editor** : coller le contenu de `supabase/schema.sql` et cliquer sur *Run*.
+1. **Supabase → SQL Editor** : lancer dans l'ordre `supabase/schema.sql`, `supabase/migration-2.sql`, `supabase/migration-3.sql`.
 2. **Supabase → Authentication** : activer *Allow anonymous sign-ins*.
 3. **GitHub → Settings → Pages** : *Deploy from a branch*, branche `main`, dossier `/ (root)`.
 
@@ -23,14 +23,25 @@ L'app est ensuite disponible sur `https://tony97421.github.io/CoTribu/`.
 
 | Fichier | Rôle |
 |---|---|
-| `index.html` | toute l'application (interface, moteur de récurrences, synchronisation) |
+| `index.html` | page de l'app (charge les scripts) |
+| `css/app.css` | charte graphique (palette, univers par couleur) |
+| `js/core.js` | dates, récurrences, rayons, catégories, modèle de départ |
+| `js/store.js` | Supabase : connexion, foyer, synchronisation, photos |
+| `js/ui.js` | navigation, panneaux, événements communs |
+| `js/accueil.js`, `maison.js`, `courses.js`, `planning.js`, `extras.js` | les univers (repas et souvenirs dans `extras.js`) |
+| `js/push.js` | abonnement aux rappels |
+| `supabase/functions/cotribu-push/` | fonction serveur qui envoie les rappels |
 | `sw.js` | cache hors ligne de l'app ; changer `VERSION` à chaque mise en ligne |
 | `manifest.webmanifest`, `icons/` | installation sur l'écran d'accueil |
 | `vendor/supabase-2.117.2.js` | bibliothèque Supabase |
 | `supabase/schema.sql` | tables, règles d'accès, création/jonction de foyer |
 
+## Rappels (notifications)
+
+- Fonction `cotribu-push` à déployer dans Supabase (Edge Functions), avec *Verify JWT* désactivé.
+- Secrets : `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `CRON_SECRET` (jamais dans ce dépôt).
+- Un déclencheur `pg_cron` l'appelle toutes les 15 minutes : rappel du matin (7h30-9h) et 1 h avant chaque événement.
+
 ## À venir
 
-- Notifications (rappels du jour envoyés à la bonne personne)
-- Liste de courses partagée, planning familial, souvenirs
 - Version Play Store
