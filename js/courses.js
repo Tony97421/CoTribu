@@ -13,13 +13,13 @@ const onList = name => activeItems().some(i => !i.done && norm(i.name) === norm(
 
 function itemRow(i, opts={}){
   const a = aisleOf(i.aisle);
-  return `<div class="task ${i.done?'done':''} u-${a.tone}" data-sid="${i.id}">
+  return `<div class="task ${i.done?'done':''} u-${a.tone}" data-sid="${i.id}" ${opts.grip ? 'data-press' : ''}>
     <button class="check" data-act="itemToggle" data-id="${i.id}" aria-pressed="${!!i.done}" aria-label="${i.done?'Décocher':'Cocher'} ${esc(i.name)}">${checkIc()}</button>
     ${opts.noIcon ? '' : `<span class="aisle-ic">${icon(a.icon,18)}</span>`}
     <div class="body" data-act="editItem" data-id="${i.id}" role="button" tabindex="0"><span class="name">${esc(i.name)}</span>${i.qty||i.done?`<span class="meta">${esc(i.qty||'')}${i.done&&i.doneBy&&S.members.has(i.doneBy)?`${i.qty?' · ':''}pris par ${esc(nameOf(i.doneBy))}`:''}</span>`:''}</div>
     ${i.addedBy && S.members.has(i.addedBy) ? avatar(i.addedBy) : ''}
     <button class="del" data-act="itemDel" data-id="${i.id}" aria-label="Supprimer ${esc(i.name)}">${icon('trash-2',18)}</button>
-    ${opts.grip ? `<span class="grip" data-grip aria-label="Glisser pour déplacer">${icon('grip-vertical',20)}</span>` : ''}
+    ${opts.grip ? `<span class="grip soft" aria-hidden="true">${icon('grip-vertical',20)}</span>` : ''}
   </div>`;
 }
 function addBar(){
@@ -52,7 +52,7 @@ function coursesList(){
   }
   const bought = items.filter(i => i.done).length;
   if (bought) h += `<button class="btn soft block" data-act="clearBought">${icon('check',18)}Ranger les ${bought} articles achetés</button>`;
-  h += `<span class="info">Maintiens la poignée ⠿ et fais glisser un article pour changer son ordre ou son rayon. <button class="linkbtn" data-act="aisleOrderOpen">Changer l’ordre des rayons</button></span>`;
+  h += `<span class="info">Reste appuyé sur un article, puis fais-le glisser pour changer son ordre ou son rayon. <button class="linkbtn" data-act="aisleOrderOpen">Changer l’ordre des rayons</button></span>`;
   return h;
 }
 function coursesAisles(){

@@ -465,3 +465,5 @@ body.is-dragging{user-select:none;-webkit-user-select:none;cursor:grabbing}
 #sheet .panel{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 #sheet .panel > *{flex-shrink:0}
 body.sheet-open{overflow:hidden}
+.grip.soft{touch-action:auto;cursor:default}
+.task.pressing{background:var(--surface2);transition:background .35s ease}
