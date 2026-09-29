@@ -6,7 +6,7 @@ function evCard(e, ds){
   const c = catOf(e);
   return `<button class="ev" style="--evc:${c.c};--evs:${c.soft}" data-act="editEvent" data-id="${e.id}" data-day="${ds}">
     <span class="bubble">${icon(c.icon,18)}</span>
-    <span class="body"><span class="tm">${esc(evTime(e))}</span><span class="t">${esc(e.title)}</span>${e.place?`<span class="loc">${icon('map-pin',13)}${esc(e.place)}</span>`:''}</span>
+    <span class="body"><span class="tm">${esc(evTime(e))}</span><span class="t">${esc(e.title)}</span>${e.place?`<span class="loc maplink" role="link" tabindex="0" data-act="maps" data-place="${esc(e.place)}" aria-label="Ouvrir ${esc(e.place)} dans Google Maps">${icon('map-pin',13)}${esc(e.place)}</span>`:''}</span>
     ${(e.members||[]).length ? avatars(e.members.filter(id=>S.members.has(id))) : ''}</button>`;
 }
 function dayDots(ds, max=3){
@@ -100,7 +100,9 @@ SHEETS.event = () => {
     <label class="toggle"><input type="checkbox" id="e-cd" data-ch="eCd" ${d.countdown?'checked':''}>Compte à rebours sur l’accueil</label>
     ${d.allDay ? '' : `<div class="frow"><label class="f" for="e-start">Début<input type="time" id="e-start" data-ch="eStart" value="${esc(d.start||'')}"></label><label class="f" for="e-end">Fin<input type="time" id="e-end" data-ch="eEnd" value="${esc(d.end||'')}"></label></div>`}
     <div class="sect"><span class="eyebrow">Qui est concerné</span><div class="chips u-plan">${ms.map(m => `<button class="chip" data-act="eMember" data-id="${m.id}" aria-pressed="${d.members.includes(m.id)}">${avatar(m.id)}${esc(m.name)}</button>`).join('')}</div></div>
-    <label class="f" for="e-place">Lieu<input type="text" id="e-place" data-ch="ePlace" value="${esc(d.place||'')}" placeholder="Ex. Piscine Petit-Port"></label>
+    <label class="f" for="e-place">Lieu<input type="text" id="e-place" data-ch="ePlace" value="${esc(d.place||'')}" placeholder="Ex. Piscine Petit-Port, Nantes" list="known-places" autocomplete="off"></label>
+    <datalist id="known-places">${knownPlaces().map(p => `<option value="${esc(p)}"></option>`).join('')}</datalist>
+    <div class="maprow"><button class="btn soft sm" data-act="mapsDraft">${icon('map-pin',16)}Voir sur la carte</button><button class="btn soft sm" data-act="mapsDraft" data-dir="1">${icon('car',16)}Itinéraire</button></div>
     <label class="f" for="e-note">Note<textarea id="e-note" data-ch="eNote" placeholder="Ex. Prévoir les jeux et le goûter">${esc(d.note||'')}</textarea></label>
     <div class="actions"><button class="btn primary" data-act="saveEvent">Enregistrer</button><button class="btn soft" data-act="close">Annuler</button></div>
     ${d.id && past ? `<button class="btn soft u-mem" style="background:var(--mem-soft);color:var(--mem-text)" data-act="eventMemory">${icon('heart',18)}Ajouter des photos de ce moment</button>` : ''}
@@ -108,7 +110,19 @@ SHEETS.event = () => {
     ${d.id ? `<button class="btn danger ${S.armed==='event'?'armed':''}" data-act="delEvent">${S.armed==='event'?'Confirmer la suppression':(d.repeat&&d.repeat!=='none'?'Supprimer toute la série':'Supprimer')}</button>` : ''}`;
 };
 
+/* Google Maps : on ouvre l'appli Maps (ou le site) sur le lieu, sans clé ni abonnement */
+function mapsUrl(place, dir){ const q = encodeURIComponent(place); return dir ? `https://www.google.com/maps/dir/?api=1&destination=${q}` : `https://www.google.com/maps/search/?api=1&query=${q}`; }
+function openMaps(place, dir){ place = String(place||'').trim(); if (!place) { toast('Indique d’abord le lieu.'); return; } window.open(mapsUrl(place, dir), '_blank', 'noopener'); }
+// lien Maps sur un lieu (sauf « À la maison »)
+const placeLink = p => /^(à|a) la maison$/i.test(String(p).trim()) ? esc(p) : `<span class="maplink" role="link" tabindex="0" data-act="maps" data-place="${esc(p)}">${esc(p)}</span>`;
+function knownPlaces(){ // les lieux déjà utilisés, les plus récents d'abord
+  const seen = new Map();
+  for (const e of [...S.events.values(), ...S.requests.values()]) { const p = (e.place||'').trim(); if (p && p !== 'À la maison') { const k = norm(p), d = e.date || ''; if (!seen.has(k) || seen.get(k).d < d) seen.set(k, {p, d}); } }
+  return [...seen.values()].sort((a,b) => b.d.localeCompare(a.d)).slice(0, 30).map(x => x.p);
+}
 Object.assign(H, {
+  maps: el => openMaps(el.dataset.place, el.dataset.dir),
+  mapsDraft: el => { const i = document.getElementById('e-place') || document.getElementById('rq-place'); openMaps(i ? i.value : (S.draft && S.draft.place), el.dataset.dir); },
   psub: el => { S.sub.planning = el.dataset.v; if (el.dataset.v === 'jour') S.planDay = localToday(); render(); },
   pickDay: el => { S.planDay = el.dataset.v; if (S.sub.planning === 'mois') S.planMonth = el.dataset.v.slice(0,7); render(); },
   shiftDay: el => { S.planDay = addDays(S.planDay, +el.dataset.v); render(); },

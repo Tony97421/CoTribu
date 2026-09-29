@@ -73,7 +73,8 @@ SHEETS.request = () => {
     <div class="frow"><label class="f" for="rq-date">Date<input type="date" id="rq-date" data-ch="rqDate" value="${esc(d.date)}"></label></div>
     <label class="toggle"><input type="checkbox" id="rq-all" data-ch="rqAll" ${d.allDay?'checked':''}>Toute la journée</label>
     ${d.allDay ? '' : `<div class="frow"><label class="f" for="rq-start">De<input type="time" id="rq-start" data-ch="rqStart" value="${esc(d.start)}"></label><label class="f" for="rq-end">À<input type="time" id="rq-end" data-ch="rqEnd" value="${esc(d.end)}"></label></div>`}
-    <label class="f" for="rq-place">Où<input type="text" id="rq-place" data-ch="rqPlace" value="${esc(d.place)}"></label>
+    <label class="f" for="rq-place">Où<input type="text" id="rq-place" data-ch="rqPlace" value="${esc(d.place)}" list="known-places" autocomplete="off"></label>
+    <datalist id="known-places">${knownPlaces().map(p => `<option value="${esc(p)}"></option>`).join('')}</datalist>
     <label class="f" for="rq-note">Petit mot<textarea id="rq-note" data-ch="rqNote" placeholder="Ex. Le goûter est dans le placard, sieste vers 14h">${esc(d.note)}</textarea></label>
     <div class="sect"><span class="eyebrow">À qui demander</span><div class="chips u-lav">${ps.map(p => `<button class="chip" data-act="rqTo" data-id="${p.id}" aria-pressed="${d.to.includes(p.id)}">${avatar(p.id)}${esc(p.name)}</button>`).join('')}</div>
       <span class="info">Si tu choisis plusieurs personnes, la première qui accepte prend la garde.</span></div>
@@ -82,7 +83,7 @@ SHEETS.request = () => {
 SHEETS.requestView = () => {
   const r = S.requests.get(S.viewId); if (!r) return '';
   return `<h2>${esc(r.title)}</h2>${reqStatus(r)}
-    <span class="muted">${esc(reqWhen(r))}${r.place ? ' · ' + esc(r.place) : ''}</span>
+    <span class="muted">${esc(reqWhen(r))}${r.place ? ' · ' + placeLink(r.place) : ''}</span>
     ${r.note ? `<span>« ${esc(r.note)} »</span>` : ''}
     <div class="sect"><span class="eyebrow">Réponses</span>${reqResponses(r)}</div>
     ${r.status !== 'cancelled' ? `<div class="actions"><button class="btn soft" data-act="remindRequest">${icon('bell',18)}Relancer</button>
@@ -111,7 +112,7 @@ VIEWS.proche = () => {
   const evs = [];
   for (let i=0;i<60;i++){ const ds = addDays(today,i); eventsOn(ds).forEach(e => evs.push([ds,e])); }
   h += `<h2>Mes prochains moments avec la famille</h2>`;
-  h += evs.length ? `<div style="display:flex;flex-direction:column;gap:10px">${evs.map(([ds,e]) => `<div class="ev" style="--evc:${catOf(e).c};--evs:${catOf(e).soft}"><span class="bubble">${icon(catOf(e).icon,18)}</span><span class="body"><span class="tm">${esc(cap(fmt(ds,{weekday:'long',day:'numeric',month:'long'})))} · ${esc(evTime(e))}</span><span class="t">${esc(e.title)}</span>${e.place?`<span class="loc">${icon('map-pin',13)}${esc(e.place)}</span>`:''}</span></div>`).join('')}</div>` : '<span class="muted">Rien de prévu.</span>';
+  h += evs.length ? `<div style="display:flex;flex-direction:column;gap:10px">${evs.map(([ds,e]) => `<div class="ev" style="--evc:${catOf(e).c};--evs:${catOf(e).soft}"><span class="bubble">${icon(catOf(e).icon,18)}</span><span class="body"><span class="tm">${esc(cap(fmt(ds,{weekday:'long',day:'numeric',month:'long'})))} · ${esc(evTime(e))}</span><span class="t">${esc(e.title)}</span>${e.place?`<span class="loc">${icon('map-pin',13)}${placeLink(e.place)}</span>`:''}</span></div>`).join('')}</div>` : '<span class="muted">Rien de prévu.</span>';
   h += pushCard() + installCard(false);
   h += `<div class="card"><span class="muted small">Tu ne vois que ce que la famille partage avec toi.</span><button class="btn danger ${S.armed==='leave'?'armed':''}" data-act="leave">${S.armed==='leave'?'Confirmer : quitter ce cercle':'Quitter ce cercle sur ce téléphone'}</button></div>`;
   return h;
