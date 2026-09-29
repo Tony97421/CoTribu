@@ -49,6 +49,10 @@ L'app est ensuite disponible sur `https://tony97421.github.io/CoTribu/`.
 - Secrets : `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `CRON_SECRET` (jamais dans ce dépôt).
 - Un déclencheur `pg_cron` l'appelle toutes les 15 minutes : rappel du matin (7h30-9h) et 1 h avant chaque événement.
 
+## Recettes partagées
+
+- Fonction `cotribu-recipe` (Edge Functions), avec *Verify JWT* **activé**, aucun secret : lit les ingrédients d'une page de recette (données schema.org « Recipe ») quand on partage un lien vers CoTribu.
+
 ## À venir
 
 - Version Play Store
