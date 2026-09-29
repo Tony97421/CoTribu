@@ -84,14 +84,15 @@ function coursesRecipes(){
   meals.forEach(m => (m.ingredients||[]).forEach(g => { if (!missing.some(x => norm(x.name)===norm(g.name))) missing.push({...g, aisle: g.aisle || aisleFor(g.name), meal:m}); }));
   const need = missing.filter(g => !onList(g.name));
   let h = `<div class="row"><h3 style="flex:1">À partir de vos repas de la semaine</h3><button class="btn ghost sm" data-act="addAllIngr">Tout ajouter</button></div>
-    <div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:4px">${meals.map(m => `<div class="ucard u-shop" style="min-width:150px;flex:none"><span class="kicker">${esc(dayTag(m.date))} · ${m.slot==='midi'?'midi':'soir'}</span>
-      <strong>${esc(m.name)}</strong><span class="muted small">${(m.ingredients||[]).length} ingrédients</span>
+    <div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:4px">${meals.map(m => `<div class="ucard u-shop mealcard" style="min-width:160px;flex:none"><div class="row" style="gap:4px"><span class="kicker" style="flex:1">${esc(dayTag(m.date))} · ${m.slot==='midi'?'midi':'soir'}</span><button class="iconbtn sm" data-act="mealDelQuick" data-id="${m.id}" aria-label="Supprimer ${esc(m.name)}">${icon('trash-2',16)}</button></div>
+      <button class="mealname" data-act="editMeal" data-id="${m.id}"><strong>${esc(m.name)}</strong><span class="muted small">${(m.ingredients||[]).length} ingrédients · modifier</span></button>
       <button class="btn upri sm u-shop" data-act="addMealIngr" data-id="${m.id}">${icon('plus',16)}Ajouter</button></div>`).join('')}</div>`;
   h += `<h3>Ingrédients manquants (${need.length})</h3>`;
   for (const a of aislesSorted()){
     const list = missing.filter(g => g.aisle === a.id); if (!list.length) continue;
     h += `<section class="group u-${a.tone}"><div class="ghead" style="background:var(--u-soft)"><span class="bubble sm">${icon(a.icon,16)}</span><h3>${esc(a.name)}</h3></div>
       ${list.map(g => { const has = onList(g.name); return `<div class="task ${has?'done':''}"><span class="aisle-ic">${icon(a.icon,18)}</span><div class="body"><span class="name">${esc(g.name)}</span><span class="meta">${esc(g.qty||'')}${g.qty?' · ':''}${esc(g.meal.name)}</span></div>
+        <button class="del" data-act="ingrDel" data-meal="${g.meal.id}" data-name="${esc(g.name)}" aria-label="Retirer ${esc(g.name)} de la recette">${icon('x',18)}</button>
         <button class="cart ${has?'on':''}" data-act="addIngr" data-name="${esc(g.name)}" data-qty="${esc(g.qty||'')}" data-aisle="${g.aisle}" aria-label="${has?'Déjà dans la liste':'Ajouter à la liste'}">${icon(has?'check':'shopping-cart',18)}</button></div>`; }).join('')}</section>`;
   }
   if (need.length) h += `<button class="btn deep block" data-act="addAllIngr">${icon('shopping-cart',20)}Tout ajouter à la liste (${need.length})</button>`;
@@ -168,6 +169,17 @@ Object.assign(H, {
   delItem: () => { if (S.armed !== 'item') { S.armed = 'item'; renderSheet(); return; } del('items', S.draft.id); closeSheet(); render(); },
   addIngr: el => { if (addIngredient({name:el.dataset.name, qty:el.dataset.qty, aisle:el.dataset.aisle})) { render(); toast(el.dataset.name + ' ajouté'); } },
   addMealIngr: el => { const m = S.meals.get(el.dataset.id); if (!m) return; let n = 0; (m.ingredients||[]).forEach(g => { if (addIngredient(g)) n++; }); render(); toast(n ? `${n} ingrédients ajoutés` : 'Tout est déjà dans la liste'); },
+  mealDelQuick: el => {
+    const m = S.meals.get(el.dataset.id); if (!m) return; const copy = clone(m);
+    del('meals', m.id); render();
+    toastUndo(`${m.name} supprimé`, () => { put('meals', copy); render(); });
+  },
+  ingrDel: el => {
+    const m = S.meals.get(el.dataset.meal); if (!m) return; const before = clone(m);
+    const n = {...clone(m), ingredients: (m.ingredients||[]).filter(g => norm(g.name) !== norm(el.dataset.name))};
+    put('meals', n); render();
+    toastUndo(`${el.dataset.name} retiré de ${m.name}`, () => { put('meals', before); render(); });
+  },
   addAllIngr: () => { let n = 0; weekMeals().forEach(m => (m.ingredients||[]).forEach(g => { if (addIngredient(g)) n++; })); render(); toast(n ? `${n} ingrédients ajoutés à la liste` : 'Tout est déjà dans la liste'); },
   rebuy: el => { const i = S.items.get(el.dataset.id); if (!i || onList(i.name)) return; addIngredient({name:i.name, qty:i.qty, aisle:i.aisle}); render(); toast(i.name + ' remis dans la liste'); },
   goRepas: () => { S.tab = 'plus'; S.sub.plus = 'repas'; render(); window.scrollTo(0,0); },

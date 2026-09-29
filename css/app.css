@@ -486,3 +486,5 @@ body.sheet-open{overflow:hidden}
 .acopt.on,.acopt:active{background:var(--plan-soft)}
 .ratecard .stars{color:#E9A93A;font-size:20px;letter-spacing:2px}
 .ratecard .linkbtn{align-self:flex-start;font-weight:600}
+.mealcard .mealname{border:0;background:none;padding:0;text-align:left;color:inherit;display:flex;flex-direction:column;gap:2px}
+.mealcard .iconbtn.sm{width:32px;height:32px;background:none;color:var(--muted)}
