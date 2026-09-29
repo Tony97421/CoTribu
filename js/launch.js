@@ -84,7 +84,8 @@ SHEETS.shared = () => {
   if (sh.thumbs.length) h += `<div class="uploads">${sh.thumbs.map(u => `<span class="ph"><img src="${esc(u)}" alt=""></span>`).join('')}</div>
     <button class="btn primary" data-act="shareMemory">${icon('heart',18)}En faire un souvenir</button>`;
   if (sh.loading) h += `<div class="row muted small"><span class="spin"></span>Lecture de la recette…</div>`;
-  if (sh.recipe) h += `<div class="ucard u-shop"><span class="kicker">Recette</span><strong>${esc(sh.recipe.name || 'Recette')}</strong><span class="muted small">${sh.recipe.ingredients.length} ingrédients${sh.recipe.servings ? ' · ' + esc(sh.recipe.servings) : ''}</span></div>`;
+  if (sh.recipe) h += `<div class="ucard u-shop"><span class="kicker">Recette</span><strong>${esc(sh.recipe.name || 'Recette')}</strong><span class="muted small">${sh.recipe.ingredients.length} ingrédients${(sh.recipe.steps||[]).length ? ` · ${sh.recipe.steps.length} étapes` : ''}${sh.recipe.time ? ` · ${sh.recipe.time} min` : ''}${sh.recipe.servings ? ' · ' + esc(sh.recipe.servings) : ''}</span>
+    <button class="btn upri sm" data-act="shareMeal">${icon('chef-hat',16)}Garder la recette dans les repas</button></div>`;
   else if (sh.recipeFail && !sh.loading) h += `<div class="info">${sh.recipeFail === 'indispo' ? 'La lecture des recettes n’est pas encore activée.' : 'Je n’ai pas trouvé les ingrédients sur cette page.'} Astuce : sur la recette, sélectionne la liste des ingrédients, puis Partager → CoTribu.</div>`;
   if (sh.text && !sh.recipe) h += `<div class="sharequote">${esc(sh.text.length > 400 ? sh.text.slice(0,400) + '…' : sh.text)}</div>`;
   if (sh.cands.length) h += `<div class="sect"><span class="eyebrow">${sh.recipe ? 'Ingrédients' : 'Pour les courses'}, touche pour retirer</span><div class="chips u-shop">${sh.cands.map((c,i) => `<button class="chip" data-act="shareTog" data-i="${i}" aria-pressed="${sh.pick[i]}">${esc(cap(c))}</button>`).join('')}</div></div>
@@ -116,8 +117,9 @@ Object.assign(H, {
   },
   shareMeal: () => {
     const sh = S.shared, name = sh.title || (sh.cands.length > 2 ? '' : sharedFirstLine());
-    const ingr = sh.cands.length > 2 ? sh.cands.join('\n') : ''; sharedDone();
-    S.draft = {...mealDraft(null, localToday(), 'soir'), name, ingrText: ingr}; S.sheet = 'meal'; S.armed = null; renderSheet();
+    const ingr = sh.cands.length > 2 ? sh.cands.join('\n') : '', r = sh.recipe || {}; sharedDone();
+    S.draft = {...mealDraft(null, localToday(), 'soir'), name, ingrText: ingr, stepsText: (r.steps||[]).join('\n'), url: r.url || '', image: r.image || '', time: r.time || 0, servings: r.servings || ''};
+    S.sheet = 'meal'; S.armed = null; renderSheet();
   },
   shareMemory: () => {
     const sh = S.shared, files = sh.files, title = sharedFirstLine(); sharedDone();

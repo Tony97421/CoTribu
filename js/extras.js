@@ -42,6 +42,9 @@ SHEETS.meal = () => {
       <div class="row" style="justify-content:space-between"><button class="linkbtn small" data-act="meWeek" data-v="-7">‹ Sem. préc.</button><span class="muted small">${d.days.length * d.slots.length > 1 ? `${d.days.length * d.slots.length} repas` : ''}</span><button class="linkbtn small" data-act="meWeek" data-v="7">Sem. suiv. ›</button></div>
       ${d.days.length * d.slots.length > 1 ? `<span class="muted small">Les ingrédients ne sont comptés qu’une fois pour les courses : pense à ajuster les quantités si tu cuisines plusieurs fois.</span>` : ''}</div>
     <label class="f" for="me-ingr">Ingrédients (un par ligne)<textarea id="me-ingr" data-ch="meIngr" rows="6" placeholder="500 g pâtes&#10;6 tomates&#10;1 mozzarella">${esc(d.ingrText)}</textarea></label>
+    <label class="f" for="me-steps">Étapes de la recette (une par ligne, facultatif)<textarea id="me-steps" data-ch="meSteps" rows="5" placeholder="Faire cuire les pâtes 10 min&#10;Couper les tomates…">${esc(d.stepsText||'')}</textarea></label>
+    ${d.url ? `<a class="linkbtn small" href="${esc(d.url)}" target="_blank" rel="noopener">${icon('book-open',14)} Voir la recette d’origine</a>` : ''}
+    ${(d.stepsText||'').trim() ? `<button class="btn upri u-shop" data-act="cookFromDraft">${icon('chef-hat',18)}Mode cuisine</button>` : ''}
     <div class="actions"><button class="btn primary" data-act="saveMeal">Enregistrer</button><button class="btn soft" data-act="close">Annuler</button></div>
     <button class="btn upri u-shop" data-act="saveMealShop">${icon('shopping-cart',18)}Enregistrer et ajouter aux courses</button>
     ${d.id ? `<button class="btn danger ${S.armed==='meal'?'armed':''}" data-act="delMeal">${S.armed==='meal'?'Confirmer la suppression':'Supprimer ce repas'}</button>` : ''}`;
@@ -50,7 +53,7 @@ function mealDraft(m, date, slot){
   if (m) {
     const o = mealOcc(m), days = [...new Set(o.map(x => x.date))], slots = [...new Set(o.map(x => x.slot))];
     const mon = mondayOf(days.slice().sort()[0]);
-    return {...clone(m), days, slots, week: [0,1,2,3,4,5,6].map(i => addDays(mon, i)), ingrText:(m.ingredients||[]).map(g => (g.qty?g.qty+' ':'')+g.name).join('\n')};
+    return {...clone(m), days, slots, week: [0,1,2,3,4,5,6].map(i => addDays(mon, i)), ingrText:(m.ingredients||[]).map(g => (g.qty?g.qty+' ':'')+g.name).join('\n'), stepsText:(m.steps||[]).join('\n')};
   }
   const ds = date || localToday(), mon = mondayOf(ds);
   return {id:null, name:'', days:[ds], slots:[slot || 'soir'], week: [0,1,2,3,4,5,6].map(i => addDays(mon, i)), ingrText:''};
@@ -61,7 +64,8 @@ function saveMealDraft(){
   if (!d.days.length) { toast('Choisis au moins un jour.'); return null; }
   if (!d.slots.length) { toast('Choisis matin, midi ou soir.'); return null; }
   const occ = []; d.days.slice().sort().forEach(ds => d.slots.slice().sort((a,b) => slotRank(a) - slotRank(b)).forEach(s => occ.push({date: ds, slot: s})));
-  const m = {id: d.id || uid('r'), name, date: occ[0].date, slot: occ[0].slot, occ, ingredients: parseIngredients(d.ingrText), by:S.me||null};
+  const steps = String(d.stepsText||'').split('\n').map(x => x.replace(/^\s*(\d+[.)]|[-•*])\s*/, '').trim()).filter(Boolean).slice(0, 40);
+  const m = {id: d.id || uid('r'), name, date: occ[0].date, slot: occ[0].slot, occ, ingredients: parseIngredients(d.ingrText), steps, url: d.url || '', image: d.image || '', time: d.time || 0, servings: d.servings || '', by:S.me||null};
   put('meals', m); if (!d.id) { if (typeof thinkCredit === 'function') thinkCredit('meals'); } return m;
 }
 Object.assign(H, {
@@ -77,9 +81,9 @@ Object.assign(H, {
   goRecipes: () => { S.tab = 'courses'; S.sub.courses = 'recettes'; S.sub.plus = null; render(); window.scrollTo(0,0); },
 });
 Object.assign(CH, {
-  meName: el => { S.draft.name = el.value; }, meIngr: el => { S.draft.ingrText = el.value; },
+  meName: el => { S.draft.name = el.value; }, meIngr: el => { S.draft.ingrText = el.value; }, meSteps: el => { S.draft.stepsText = el.value; },
 });
-['meName','meIngr'].forEach(k => LIVE.add(k));
+['meName','meIngr','meSteps'].forEach(k => LIVE.add(k));
 
 /* ---------- Souvenirs ---------- */
 function photoImg(p, cls=''){ return `<img class="${cls}" data-path="${esc(p)}" ${photoUrl(p)?`src="${esc(photoUrl(p))}"`:''} alt="" loading="lazy">`; }

@@ -87,7 +87,7 @@ function coursesRecipes(){
   let h = `<div class="row"><h3 style="flex:1">À partir de vos repas de la semaine</h3><button class="btn ghost sm" data-act="addAllIngr">Tout ajouter</button></div>
     <div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:4px">${meals.map(m => `<div class="ucard u-shop mealcard" style="min-width:160px;flex:none"><div class="row" style="gap:4px"><span class="kicker" style="flex:1">${esc(dayTag(m.date))} · ${esc(m.slot)}${mealOcc(m).length > 1 ? ` +${mealOcc(m).length - 1}` : ''}</span><button class="iconbtn sm" data-act="mealDelQuick" data-id="${m.id}" aria-label="Supprimer ${esc(m.name)}">${icon('trash-2',16)}</button></div>
       <button class="mealname" data-act="editMeal" data-id="${m.id}"><strong>${esc(m.name)}</strong><span class="muted small">${(m.ingredients||[]).length} ingrédients · modifier</span></button>
-      <button class="btn upri sm u-shop" data-act="addMealIngr" data-id="${m.id}">${icon('plus',16)}Ajouter</button></div>`).join('')}</div>`;
+      <div class="row" style="gap:6px"><button class="btn upri sm u-shop" data-act="addMealIngr" data-id="${m.id}">${icon('plus',16)}Ajouter</button>${(m.steps||[]).length ? `<button class="btn soft sm" data-act="cook" data-id="${m.id}" aria-label="Mode cuisine">${icon('chef-hat',16)}</button>` : ''}</div></div>`).join('')}</div>`;
   h += `<h3>Ingrédients manquants (${need.length})</h3>`;
   for (const a of aislesSorted()){
     const list = missing.filter(g => g.aisle === a.id); if (!list.length) continue;

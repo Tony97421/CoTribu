@@ -503,3 +503,30 @@ body.sheet-open{overflow:hidden}
 .daypick .daychip{padding:10px 0}
 .newslist{display:flex;flex-direction:column;gap:8px}
 .newslist svg{flex:none;margin-top:2px;color:var(--warm-text)}
+/* ---------- Mode cuisine ---------- */
+.cook{position:fixed;inset:0;z-index:60;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;padding:calc(10px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))}
+.ck-top{display:flex;align-items:center;gap:10px;min-height:44px}
+.ck-dots{flex:1;display:flex;gap:4px}
+.ck-dots i{flex:1;height:4px;border-radius:4px;background:var(--line)}
+.ck-dots i.on{background:var(--shop)}
+.ck-x{width:44px;height:44px;border-radius:50%;border:0;background:var(--surface2);color:var(--ink);display:grid;place-items:center;flex:none}
+.ck-body{flex:1;overflow:auto;display:flex;flex-direction:column;justify-content:center;padding:8px 2px}
+.ck-intro{display:flex;flex-direction:column;gap:10px;align-self:stretch;justify-content:flex-start}
+.ck-intro h1,.ck-end h1{font-family:'Fraunces',serif;font-size:28px;margin:4px 0 0}
+.ck-img{width:100%;max-height:200px;object-fit:cover;border-radius:18px}
+.ck-ingr{display:flex;flex-direction:column;gap:6px}
+.ck-ingr button{display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 12px;text-align:left;color:var(--ink);font-size:16px}
+.ck-ingr button svg{color:var(--faint);flex:none}
+.ck-ingr button.on{opacity:.55}
+.ck-ingr button.on span{text-decoration:line-through}
+.ck-ingr button.on svg{color:var(--done)}
+.ck-step{display:flex;flex-direction:column;gap:14px}
+.ck-step p{font-size:24px;line-height:1.45;margin:0;font-weight:500}
+.ck-tools{display:flex;flex-wrap:wrap;gap:8px}
+.ck-end{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;color:var(--shop-text)}
+.ck-timer{display:flex;align-items:center;gap:10px;background:var(--shop-soft);color:var(--shop-text);border-radius:14px;padding:10px 12px;margin-bottom:10px}
+.ck-timer b{flex:1;font-size:22px}
+.ck-timer button{border:0;background:var(--shop);color:#3B3113;border-radius:10px;padding:8px 12px;font-weight:700}
+.ck-timer.ring{animation:micpulse 1s infinite;background:#F8D7D2;color:#8A2E22}
+.ck-nav{display:flex;gap:10px}
+.ck-nav .btn{flex:1}

@@ -88,6 +88,7 @@ function goSub(fn){ fn(); if (!(history.state && history.state.sub)) history.pus
 window.addEventListener('popstate', () => {
   if (ignorePop) { ignorePop = false; return; }
   if (typeof slidesOpen === 'function' && slidesOpen()) { closeSlides(true); return; }
+  if (typeof cookOpen === 'function' && cookOpen()) { closeCook(true); return; }
   if (S.sheet) { closeSheet(true); return; }
   if (S.roomOpen) { S.roomOpen = null; render(); return; }
   if (S.aisleOpen) { S.aisleOpen = null; render(); return; }
