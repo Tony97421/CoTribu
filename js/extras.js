@@ -25,7 +25,7 @@ function VIEWS_REPAS(){
     const ms = mealsOn(ds);
     h += `<div class="card u-shop" style="gap:4px${ds===today?';border:2px solid var(--shop)':''}"><div class="row"><h3 style="flex:1">${esc(cap(fmt(ds,{weekday:'long',day:'numeric'})))}</h3>${ds===today?'<span class="pill" style="background:var(--shop-soft);color:var(--shop-text)">Aujourd’hui</span>':''}</div>
       ${['matin','midi','soir'].filter(slot => slot !== 'matin' || ms.some(x => x.slot === 'matin')).map(slot => { const m = ms.find(x => x.slot === slot);
-        return `<div class="meal"><span class="slot">${slot}</span>${m ? `<button class="body" style="border:0;background:none;text-align:left;padding:0;color:inherit" data-act="editMeal" data-id="${m.id}"><div class="t">${esc(m.name)}</div><div class="s">${(m.ingredients||[]).length ? (m.ingredients.length+' ingrédients') : 'Pas d’ingrédients notés'}${mealOcc(m).length > 1 ? ` · ${mealOcc(m).length} repas` : ''}</div></button>`
+        return `<div class="meal"><span class="slot">${slot}</span>${m ? `${(m.steps||[]).length ? `<button class="iconbtn cookmini" data-act="cook" data-id="${m.id}" aria-label="Cuisiner ${esc(m.name)}">${icon('chef-hat',18)}</button>` : ''}<button class="body" style="border:0;background:none;text-align:left;padding:0;color:inherit" data-act="editMeal" data-id="${m.id}"><div class="t">${esc(m.name)}</div><div class="s">${(m.ingredients||[]).length ? (m.ingredients.length+' ingrédients') : 'Pas d’ingrédients notés'}${mealOcc(m).length > 1 ? ` · ${mealOcc(m).length} repas` : ''}</div></button>`
           : `<button class="add" data-act="newMeal" data-date="${ds}" data-slot="${slot}">+ Ajouter</button>`}</div>`; }).join('')}</div>`;
   }
   h += `<button class="btn upri block u-shop" data-act="menuOpen">${icon('sparkles',20)}Proposer des menus avec l’IA</button>`;
@@ -36,6 +36,7 @@ SHEETS.meal = () => {
   const d = S.draft;
   return `<h2>${d.id ? 'Modifier le repas' : 'Nouveau repas'}</h2>
     <label class="f" for="me-name">Plat<input type="text" id="me-name" data-ch="meName" value="${esc(d.name)}" placeholder="Ex. Salade de pâtes"></label>
+    ${d.id || (d.stepsText||'').trim() ? `<button class="btn upri u-shop cookbtn" data-act="cookFromDraft">${icon('chef-hat',20)}<span><b>Cuisiner ce plat</b><small>Les étapes en grand, une par une, avec minuteurs</small></span></button>` : ''}
     <div class="sect"><span class="eyebrow">Quand</span>
       <div class="chips u-shop">${SLOTS.map(([k,l]) => `<button class="chip" data-act="meSlotTog" data-v="${k}" aria-pressed="${d.slots.includes(k)}">${l}</button>`).join('')}</div>
       <div class="daychips">${d.week.map(ds => `<button class="daychip" data-act="meDayTog" data-v="${ds}" aria-pressed="${d.days.includes(ds)}"><small>${esc(shortDay(ds))}</small><b>${ymd(ds)[2]}</b></button>`).join('')}</div>
@@ -44,7 +45,7 @@ SHEETS.meal = () => {
     <label class="f" for="me-ingr">Ingrédients (un par ligne)<textarea id="me-ingr" data-ch="meIngr" rows="6" placeholder="500 g pâtes&#10;6 tomates&#10;1 mozzarella">${esc(d.ingrText)}</textarea></label>
     <label class="f" for="me-steps">Étapes de la recette (une par ligne, facultatif)<textarea id="me-steps" data-ch="meSteps" rows="5" placeholder="Faire cuire les pâtes 10 min&#10;Couper les tomates…">${esc(d.stepsText||'')}</textarea></label>
     ${d.url ? `<a class="linkbtn small" href="${esc(d.url)}" target="_blank" rel="noopener">${icon('book-open',14)} Voir la recette d’origine</a>` : ''}
-    ${(d.stepsText||'').trim() ? `<button class="btn upri u-shop" data-act="cookFromDraft">${icon('chef-hat',18)}Mode cuisine</button>` : ''}
+
     <div class="actions"><button class="btn primary" data-act="saveMeal">Enregistrer</button><button class="btn soft" data-act="close">Annuler</button></div>
     <button class="btn upri u-shop" data-act="saveMealShop">${icon('shopping-cart',18)}Enregistrer et ajouter aux courses</button>
     ${d.id ? `<button class="btn danger ${S.armed==='meal'?'armed':''}" data-act="delMeal">${S.armed==='meal'?'Confirmer la suppression':'Supprimer ce repas'}</button>` : ''}`;

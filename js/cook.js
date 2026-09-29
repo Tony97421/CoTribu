@@ -81,6 +81,13 @@ function closeCook(fromPop){
 }
 document.addEventListener('keydown', e => { if (!CK) return; if (e.key === 'Escape') closeCook(); else if (e.key === 'ArrowRight') cookCmd('next'); else if (e.key === 'ArrowLeft') cookCmd('prev'); });
 Object.assign(H, {
-  cook: el => { const m = S.meals.get(el.dataset.id); if (m) startCook(m); },
-  cookFromDraft: () => { const d = S.draft; startCook({name: d.name, ingredients: parseIngredients(d.ingrText), steps: String(d.stepsText||'').split('\n').map(x => x.replace(/^\s*(\d+[.)]|[-•*])\s*/, '').trim()).filter(Boolean), image: d.image, time: d.time, servings: d.servings}); },
+  cook: el => {
+    const m = S.meals.get(el.dataset.id); if (!m) return;
+    if ((m.steps||[]).length) { startCook(m); return; }
+    H.editMeal({dataset:{id: m.id}}); toast('Écris les étapes de la recette (une par ligne), puis touche « Cuisiner ce plat ».');
+    setTimeout(() => { const t = document.getElementById('me-steps'); if (t) { t.scrollIntoView({block:'center'}); t.focus(); } }, 250);
+  },
+  cookFromDraft: () => { const d = S.draft;
+    if (!String(d.stepsText||'').trim()) { toast('Écris d’abord les étapes de la recette, une par ligne, juste en dessous.'); const t = document.getElementById('me-steps'); if (t) { t.scrollIntoView({block:'center'}); t.focus(); } return; }
+    startCook({name: d.name, ingredients: parseIngredients(d.ingrText), steps: String(d.stepsText||'').split('\n').map(x => x.replace(/^\s*(\d+[.)]|[-•*])\s*/, '').trim()).filter(Boolean), image: d.image, time: d.time, servings: d.servings}); },
 });
