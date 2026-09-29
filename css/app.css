@@ -501,3 +501,5 @@ body.sheet-open{overflow:hidden}
 .avail{display:flex;flex-direction:column;gap:2px;background:var(--plan-soft);border-radius:12px;padding:8px 10px;margin-top:8px}
 .daypick{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
 .daypick .daychip{padding:10px 0}
+.newslist{display:flex;flex-direction:column;gap:8px}
+.newslist svg{flex:none;margin-top:2px;color:var(--warm-text)}

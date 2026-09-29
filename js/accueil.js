@@ -13,7 +13,7 @@ VIEWS.today = () => {
     const line = done ? `${done} ${done>1?'tâches terminées':'tâche terminée'} aujourd’hui` : total ? `${total} ${total>1?'tâches':'tâche'} au programme` : 'Rien d’urgent aujourd’hui';
     h += `<div class="banner"><span class="sun">${icon('sun',24)}</span><div><h3>${hello}</h3><span class="muted small">${line}</span></div><button class="x" data-act="dismiss" data-v="hello" aria-label="Masquer">${icon('x',18)}</button></div>`;
   }
-  h += whoAmICard() + firstStepsCard() + installCard(true);
+  h += whoAmICard() + firstStepsCard() + (typeof newsCard === 'function' ? newsCard() : '') + installCard(true);
   h += (typeof thanksCard === 'function' ? thanksCard() : '') + (typeof rateCard === 'function' ? rateCard() : '') + pauseCard('today') + throwbackHero() + countdownCard();
   h += meteoCard();
   const pk = prevMonthKey();
