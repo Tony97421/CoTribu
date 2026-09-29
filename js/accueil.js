@@ -14,7 +14,7 @@ VIEWS.today = () => {
     h += `<div class="banner"><span class="sun">${icon('sun',24)}</span><div><h3>${hello}</h3><span class="muted small">${line}</span></div><button class="x" data-act="dismiss" data-v="hello" aria-label="Masquer">${icon('x',18)}</button></div>`;
   }
   h += whoAmICard() + firstStepsCard() + installCard(true);
-  h += (typeof thanksCard === 'function' ? thanksCard() : '') + pauseCard('today') + throwbackHero() + countdownCard();
+  h += (typeof thanksCard === 'function' ? thanksCard() : '') + (typeof rateCard === 'function' ? rateCard() : '') + pauseCard('today') + throwbackHero() + countdownCard();
   h += meteoCard();
   const pk = prevMonthKey();
   if (+today.slice(8) <= 5 && LS.get('cotribu-dismiss-bilan') !== pk && sorted(S.members).some(m => !m.kid && thinkTotal(m, pk) > 0))
@@ -84,7 +84,8 @@ VIEWS.plus = () => {
     ${[['premium','crown','CoTribu Premium', isPremium() ? premiumUntilLabel() : 'L’IA qui fait le travail à votre place','u-warm'],['charge','brain','Charge mentale','Qui pense à quoi, qui le fait','u-lav'],['points','star','Points et récompenses','Les tâches faites rapportent des points','u-shop'],['repas','utensils','Repas','Le menu de la semaine','u-shop'],['souvenirs','heart','Souvenirs','Photos et moments importants','u-mem'],['proches','hand-heart','Proches','Grands-parents, nounou : demandes de garde','u-lav'],['foyer','users','Foyer et famille','Membres, invitation, rappels, Google Agenda','u-home']]
       .map(([v,ic,t,s,u]) => `<button class="lrow ${u}" data-act="plusGo" data-v="${v}"><span class="bubble">${icon(ic,20)}</span><span class="body"><span class="t">${t}</span><span class="s">${s}</span></span>${icon('chevron-right',18)}</button>`).join('')}</div>`;
   h += `<div class="menu"><button class="lrow" data-act="guideOpen"><span class="bubble soft" style="--u-soft:var(--home-soft);--u-text:var(--home-text)">${icon('book-open',18)}</span><span class="body"><span class="t">Guide de démarrage</span><span class="s">Revoir comment marche CoTribu</span></span>${icon('chevron-right',18)}</button>
-    <button class="lrow" data-act="feedbackOpen"><span class="bubble soft" style="--u-soft:var(--lav-soft);--u-text:var(--lav-text)">${icon('send',18)}</span><span class="body"><span class="t">Une idée ? Un souci ?</span><span class="s">Dis-nous ce qui t’aiderait ou ce qui coince</span></span>${icon('chevron-right',18)}</button></div>`;
+    <button class="lrow" data-act="feedbackOpen"><span class="bubble soft" style="--u-soft:var(--lav-soft);--u-text:var(--lav-text)">${icon('send',18)}</span><span class="body"><span class="t">Une idée ? Un souci ?</span><span class="s">Dis-nous ce qui t’aiderait ou ce qui coince</span></span>${icon('chevron-right',18)}</button>
+    <button class="lrow" data-act="rateMenu"><span class="bubble soft" style="--u-soft:var(--warm-soft);--u-text:var(--warm-text)">${icon(typeof storeUrl === 'function' && storeUrl() ? 'star' : 'share-2',18)}</span><span class="body"><span class="t">${typeof storeUrl === 'function' && storeUrl() ? 'Noter CoTribu' : 'Recommander CoTribu'}</span><span class="s">${typeof storeUrl === 'function' && storeUrl() ? 'Une note aide d’autres familles à nous trouver' : 'Parle de CoTribu à une famille autour de toi'}</span></span>${icon('chevron-right',18)}</button></div>`;
   h += installCard(false);
   return h;
 };

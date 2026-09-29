@@ -1,10 +1,10 @@
 // CoTribu — service worker : cache hors ligne de l'app + réception des notifications.
 // Changer VERSION à chaque mise en ligne.
-const VERSION = 'cotribu-v28';
+const VERSION = 'cotribu-v29';
 const SHELL = [
   './', './index.html', './manifest.webmanifest', './css/app.css',
   './js/icons.js', './js/core.js', './js/store.js', './js/ui.js', './js/maison.js', './js/courses.js',
-  './js/planning.js', './js/extras.js', './js/accueil.js', './js/push.js', './js/proches.js', './js/premium.js', './js/ai.js', './js/points.js', './js/family.js', './js/guide.js', './js/moments.js', './js/launch.js', './js/drag.js', './js/social.js', './js/places.js', './js/feedback.js',
+  './js/planning.js', './js/extras.js', './js/accueil.js', './js/push.js', './js/proches.js', './js/premium.js', './js/ai.js', './js/points.js', './js/family.js', './js/guide.js', './js/moments.js', './js/launch.js', './js/drag.js', './js/social.js', './js/places.js', './js/feedback.js', './js/rating.js',
   './vendor/supabase-2.117.2.js',
   './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/favicon.png', './icons/badge.png',
   './icons/shortcut-courses.png', './icons/shortcut-task.png', './icons/shortcut-event.png', './icons/shortcut-memory.png',

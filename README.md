@@ -53,6 +53,10 @@ L'app est ensuite disponible sur `https://tony97421.github.io/CoTribu/`.
 
 - Fonction `cotribu-recipe` (Edge Functions), avec *Verify JWT* désactivé (elle vérifie elle-même l'utilisateur), aucun secret : lit les ingrédients d'une page de recette (données schema.org « Recipe ») quand on partage un lien vers CoTribu.
 
+## Au lancement sur les stores
+
+- Dans `js/rating.js`, remplir `STORE.play` (identifiant du Play Store, ex. `fr.cotribu.app`) et plus tard `STORE.apple` (lien App Store) : la demande de note enverra alors vers la bonne fiche. Avant ça, elle propose de recommander CoTribu.
+
 ## À venir
 
 - Version Play Store
