@@ -1,6 +1,7 @@
 // @ts-nocheck
 // CoTribu — fonction serveur « cotribu-push »
 // Envoie les rappels : le matin (tâches + événements du jour de chaque membre) et 1 h avant chaque événement.
+// Prévient aussi les administrateurs (table admins) quand un utilisateur envoie « Une idée ? Un souci ? ».
 // Appelée toutes les 15 minutes par pg_cron (mode "tick"), ou depuis l'app (mode "test").
 // Secrets à définir dans Supabase → Edge Functions → Secrets :
 //   VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT, CRON_SECRET
@@ -150,9 +151,30 @@ function morningMessage(h, memberId, today) {
   return { title, body: parts.join("\n"), tag: `morning-${today}`, url: "./" };
 }
 
+// Nouveaux messages « Une idée ? Un souci ? » → notification aux administrateurs (table admins)
+const FB_TITLE = { idee: "💡 Nouvelle idée", probleme: "🔧 Nouveau problème signalé", bravo: "💛 Nouveau bravo" };
+async function notifyFeedback() {
+  const { data: admins } = await db.from("admins").select("user_id");
+  if (!admins || !admins.length) return 0;
+  const { data: rows } = await db.from("feedback").select("id,kind,message,contact,created_at")
+    .eq("traite", false).gt("created_at", new Date(Date.now() - 2 * DAY).toISOString()).order("created_at").limit(20);
+  if (!rows || !rows.length) return 0;
+  const { data: subs } = await db.from("push_subs").select("*").in("user_id", admins.map((a) => a.user_id));
+  if (!subs || !subs.length) return 0;
+  let sent = 0;
+  for (const f of rows) {
+    if (!(await once(`fb:${f.id}`))) continue;
+    const text = String(f.message || "").replace(/\s+/g, " ");
+    const payload = { title: FB_TITLE[f.kind] || "Nouveau message", body: (text.length > 140 ? text.slice(0, 140) + "…" : text) + (f.contact ? `\n✉️ ${f.contact}` : ""), tag: `fb-${f.id}`, url: "./" };
+    for (const s of subs) if (await send(s, payload)) sent++;
+  }
+  return sent;
+}
+
 async function tick() {
+  let fbSent = 0; try { fbSent = await notifyFeedback(); } catch (e) { console.error("feedback", e); }
   const { data: subs } = await db.from("push_subs").select("*");
-  if (!subs || !subs.length) return { sent: 0 };
+  if (!subs || !subs.length) return { sent: fbSent };
   const H = await loadHouseholds([...new Set(subs.map((s) => s.household_id))]);
   let sent = 0;
   for (const s of subs) {
@@ -177,7 +199,7 @@ async function tick() {
   }
   // ménage du journal (plus de 3 jours)
   await db.from("push_log").delete().lt("sent_at", new Date(Date.now() - 3 * DAY).toISOString());
-  return { sent };
+  return { sent: sent + fbSent };
 }
 
 Deno.serve(async (req) => {
@@ -193,6 +215,14 @@ Deno.serve(async (req) => {
     let sent = 0;
     for (const s of subs || []) if (await send(s, { title: "CoTribu", body: "Les rappels fonctionnent sur ce téléphone.", tag: "test", url: "./" })) sent++;
     return json({ sent });
+  }
+
+  // Un utilisateur vient d'envoyer un avis : on prévient tout de suite les administrateurs
+  if (body.mode === "feedback") {
+    const jwt = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
+    const { data: u } = await db.auth.getUser(jwt);
+    if (!u || !u.user) return json({ error: "non connecté" }, 401);
+    return json({ sent: await notifyFeedback() });
   }
 
   // Messages liés aux demandes de garde (envoyés par l'app après une action)

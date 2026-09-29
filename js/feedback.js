@@ -34,6 +34,7 @@ Object.assign(H, {
       const {error} = await sb.from('feedback').insert({user_id: u && u.user ? u.user.id : null, household_id: S.hh ? S.hh.id : null, kind: d.kind, message: message.slice(0,4000), contact: contact || null, info: fbInfo()});
       if (error) throw error;
       LS.set('cotribu-fb-last', String(Date.now())); if (contact) LS.set('cotribu-fb-contact', contact);
+      sb.functions.invoke('cotribu-push', {body:{mode:'feedback'}}).catch(() => {}); // prévient l'équipe tout de suite
       closeSheet(); toast({idee:'Merci pour ton idée ! 💡', probleme:'Merci, on regarde ça.', bravo:'Merci, ça fait chaud au cœur ! 💛'}[d.kind]);
     } catch(e) {
       console.warn(e); d.sending = false; renderSheet();
