@@ -1,6 +1,6 @@
 // CoTribu — service worker : cache hors ligne de l'app + réception des notifications.
 // Changer VERSION à chaque mise en ligne.
-const VERSION = 'cotribu-v32';
+const VERSION = 'cotribu-v33';
 const SHELL = [
   './', './index.html', './manifest.webmanifest', './css/app.css',
   './js/icons.js', './js/core.js', './js/store.js', './js/ui.js', './js/maison.js', './js/courses.js',
@@ -53,11 +53,28 @@ self.addEventListener('push', e => {
   try { d = e.data ? e.data.json() : {}; } catch (_) { d = {body: e.data && e.data.text()}; }
   e.waitUntil(self.registration.showNotification(d.title || 'CoTribu', {
     body: d.body || '', tag: d.tag, renotify: !!d.tag,
-    icon: 'icons/icon-192.png', badge: 'icons/badge.png', data: {url: d.url || './'},
+    icon: 'icons/icon-192.png', badge: 'icons/badge.png', data: {url: d.url || './', done: d.done || null},
+    actions: Array.isArray(d.actions) ? d.actions.slice(0, 2) : [],
   }));
 });
+// « C'est fait ✓ » : on coche la tâche sans ouvrir l'app (lien signé par le serveur)
+async function markDoneFromNotif(n){
+  const x = n.data && n.data.done; if (!x) return false;
+  try {
+    const res = await fetch(x.url, {method: 'POST', headers: {'Content-Type': 'application/json', ...(x.key ? {apikey: x.key, Authorization: 'Bearer ' + x.key} : {})},
+      body: JSON.stringify({mode: 'done', h: x.h, t: x.t, m: x.m, d: x.d, sig: x.sig})});
+    const r = await res.json().catch(() => ({}));
+    if (!res.ok || !r.ok) return false;
+    await self.registration.showNotification(r.already ? 'Déjà fait 👍' : 'Bravo, c’est noté ✓', {body: r.name || '', tag: n.tag || 'done', icon: 'icons/icon-192.png', badge: 'icons/badge.png', silent: true, data: {url: './'}});
+    return true;
+  } catch (_) { return false; }
+}
 self.addEventListener('notificationclick', e => {
   e.notification.close();
+  if (e.action === 'done') {
+    e.waitUntil(markDoneFromNotif(e.notification).then(ok => ok || clients.openWindow(new URL('./', self.registration.scope).href)));
+    return;
+  }
   const target = new URL(e.notification.data && e.notification.data.url || './', self.registration.scope).href;
   e.waitUntil(clients.matchAll({type: 'window', includeUncontrolled: true}).then(list => {
     for (const c of list) if (c.url.startsWith(self.registration.scope) && 'focus' in c) return c.focus();

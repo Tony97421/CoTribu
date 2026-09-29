@@ -2,6 +2,7 @@
 // CoTribu — fonction serveur « cotribu-push »
 // Envoie les rappels : le matin (tâches + événements du jour de chaque membre) et 1 h avant chaque événement.
 // Prévient aussi les administrateurs (table admins) quand un utilisateur envoie « Une idée ? Un souci ? ».
+// Rappel 30 min avant les tâches à heure fixe, avec un bouton « C'est fait ✓ » qui coche la tâche sans ouvrir l'app.
 // Appelée toutes les 15 minutes par pg_cron (mode "tick"), ou depuis l'app (mode "test").
 // Secrets à définir dans Supabase → Edge Functions → Secrets :
 //   VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT, CRON_SECRET
@@ -72,6 +73,7 @@ function dueToday(t, today, p) {
   return false;
 }
 function assigneesOn(t, ds, members) {
+  if (t.swap && t.swap[ds] && members.has(t.swap[ds])) return [t.swap[ds]]; // « je m'en occupe » pour ce jour-là
   const a = t.assign || { mode: "anyone" };
   const ids = (a.members || []).filter((id) => members.has(id));
   if (a.mode === "fixed") return ids;
@@ -107,6 +109,42 @@ async function send(sub, payload) {
     return false;
   }
 }
+/* ---------- bouton « C'est fait ✓ » dans la notification ---------- */
+// lien signé (on ne peut cocher que CETTE tâche, pour CETTE personne, CE jour-là)
+const enc = new TextEncoder();
+let hmacKey = null;
+async function sign(text) {
+  hmacKey ||= await crypto.subtle.importKey("raw", enc.encode(Deno.env.get("CRON_SECRET") || "cotribu"), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const buf = new Uint8Array(await crypto.subtle.sign("HMAC", hmacKey, enc.encode(text)));
+  return btoa(String.fromCharCode(...buf)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+const FN_URL = `${Deno.env.get("SUPABASE_URL")}/functions/v1/cotribu-push`;
+async function doneAction(hid, taskId, memberId, date) {
+  const sig = await sign(`${hid}|${taskId}|${memberId}|${date}`);
+  return { actions: [{ action: "done", title: "C’est fait ✓" }], done: { url: FN_URL, key: Deno.env.get("SUPABASE_ANON_KEY") || "", h: hid, t: taskId, m: memberId, d: date, sig } };
+}
+async function markDone(b) {
+  const { h, t, m, d, sig } = b || {};
+  if (!h || !t || !m || !d || !sig || sig !== await sign(`${h}|${t}|${m}|${d}`)) return { error: "lien invalide" };
+  if (Math.abs(idx(d) - idx(new Date().toISOString().slice(0, 10))) > 1) return { error: "trop tard" };
+  const { data: rows } = await db.from("docs").select("col,id,data").eq("household_id", h).in("col", ["tasks", "members"]).in("id", [t, m]);
+  const task = (rows || []).find((r) => r.col === "tasks" && r.id === t), mem = (rows || []).find((r) => r.col === "members" && r.id === m);
+  if (!task) return { error: "tâche introuvable" };
+  const td = { ...task.data }; td.done = { ...(td.done || {}) };
+  if (td.done[d]) return { ok: true, name: td.name, already: true };
+  td.done[d] = m;
+  const keys = Object.keys(td.done).sort(); while (keys.length > 40) delete td.done[keys.shift()];
+  if (!td.lastDone || d >= td.lastDone) { td.lastDone = d; td.lastBy = m; }
+  await db.from("docs").upsert({ household_id: h, col: "tasks", id: t, data: td });
+  if (mem) { // points + « qui le fait » (charge mentale), comme dans l'app
+    const md = { ...mem.data }; const pts = td.points != null ? +td.points : 1;
+    if (pts) { md.history = [{ t: "task", pts, d, at: new Date().toISOString(), label: td.name, taskId: t }, ...(md.history || [])].slice(0, 150); md.points = Math.max(0, (+md.points || 0) + pts); }
+    const mk = d.slice(0, 7); md.mental = { ...(md.mental || {}) }; md.mental[mk] = { a: {}, f: 0, ...(md.mental[mk] || {}) }; md.mental[mk].f = (md.mental[mk].f || 0) + 1;
+    await db.from("docs").upsert({ household_id: h, col: "members", id: m, data: md });
+  }
+  return { ok: true, name: td.name };
+}
+
 async function once(key) { // vrai si pas encore envoyé
   const { error } = await db.from("push_log").insert({ key });
   return !error;
@@ -130,13 +168,14 @@ const personName = (h, id) => ((h.members.get(id) || h.proches.get(id) || {}).na
 
 function morningMessage(h, memberId, today) {
   const name = personName(h, memberId);
-  const tasks = [], pause = familyPause(h.members);
+  const tasks = [], taskIds = [], pause = familyPause(h.members);
   for (const t of (memberId.startsWith("p-") ? [] : h.tasks.values())) {
     if (!h.rooms.has(t.roomId) || !dueToday(t, today, pause)) continue;
     const a = assigneesOn(t, today, h.members);
     if (a.length && !a.includes(memberId)) continue;
     if (!a.length) continue; // « qui veut » : pas de rappel individuel
     tasks.push(t.name + (t.time && t.time.at ? ` (${t.time.mode === "before" ? "avant " : ""}${hm(t.time.at)})` : ""));
+    taskIds.push(t.id);
   }
   const evs = [...h.events.values()].filter((e) => eventOn(e, today) && concerns(e, memberId))
     .sort((a, b) => (a.start || "").localeCompare(b.start || ""))
@@ -148,7 +187,7 @@ function morningMessage(h, memberId, today) {
   const title = tasks.length
     ? `Bonjour ${name} ! ${tasks.length} ${tasks.length > 1 ? "tâches" : "tâche"} aujourd’hui`
     : `Bonjour ${name} ! Au programme aujourd’hui`;
-  return { title, body: parts.join("\n"), tag: `morning-${today}`, url: "./" };
+  return { title, body: parts.join("\n"), tag: `morning-${today}`, url: "./", onlyTask: taskIds.length === 1 && !evs.length ? taskIds[0] : null };
 }
 
 // Nouveaux messages « Une idée ? Un souci ? » → notification aux administrateurs (table admins)
@@ -183,7 +222,24 @@ async function tick() {
     // Rappel du matin, entre 7h30 et 9h00 (une seule fois par jour)
     if (now.min >= 450 && now.min < 540) {
       const msg = morningMessage(h, s.member_id, now.date);
-      if (msg && await once(`m:${s.endpoint}:${now.date}`)) { if (await send(s, msg)) sent++; }
+      if (msg && await once(`m:${s.endpoint}:${now.date}`)) {
+        if (msg.onlyTask) Object.assign(msg, await doneAction(s.household_id, msg.onlyTask, s.member_id, now.date));
+        delete msg.onlyTask;
+        if (await send(s, msg)) sent++;
+      }
+    }
+    // Tâche avec une heure (« à 18h » ou « avant 9h ») : rappel 30 min avant, à la personne concernée
+    if (!s.member_id.startsWith("p-")) {
+      const pause = familyPause(h.members);
+      for (const t of h.tasks.values()) {
+        if (!t.time || !t.time.at || !h.rooms.has(t.roomId) || !dueToday(t, now.date, pause)) continue;
+        if (!assigneesOn(t, now.date, h.members).includes(s.member_id)) continue;
+        const delta = toMin(t.time.at) - now.min;
+        if (delta > 0 && delta <= 35 && await once(`t:${s.endpoint}:${t.id}:${now.date}`)) {
+          const body = t.time.mode === "before" ? `À faire avant ${hm(t.time.at)} · dans ${delta} min` : `Prévu à ${hm(t.time.at)} · dans ${delta} min`;
+          if (await send(s, { title: t.name, body, tag: `task-${t.id}`, url: "./", ...(await doneAction(s.household_id, t.id, s.member_id, now.date)) })) sent++;
+        }
+      }
     }
     // 1 h avant chaque événement
     for (const e of h.events.values()) {
@@ -216,6 +272,9 @@ Deno.serve(async (req) => {
     for (const s of subs || []) if (await send(s, { title: "CoTribu", body: "Les rappels fonctionnent sur ce téléphone.", tag: "test", url: "./" })) sent++;
     return json({ sent });
   }
+
+  // « C'est fait ✓ » touché dans une notification (lien signé, sans connexion)
+  if (body.mode === "done") return json(await markDone(body));
 
   // Un utilisateur vient d'envoyer un avis : on prévient tout de suite les administrateurs
   if (body.mode === "feedback") {
