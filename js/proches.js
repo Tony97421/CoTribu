@@ -73,6 +73,7 @@ SHEETS.request = () => {
     <div class="frow"><label class="f" for="rq-date">Date<input type="date" id="rq-date" data-ch="rqDate" value="${esc(d.date)}"></label></div>
     <label class="toggle"><input type="checkbox" id="rq-all" data-ch="rqAll" ${d.allDay?'checked':''}>Toute la journée</label>
     ${d.allDay ? '' : `<div class="frow"><label class="f" for="rq-start">De<input type="time" id="rq-start" data-ch="rqStart" value="${esc(d.start)}"></label><label class="f" for="rq-end">À<input type="time" id="rq-end" data-ch="rqEnd" value="${esc(d.end)}"></label></div>`}
+    ${typeof availLine === 'function' ? availLine(d.date, d.allDay ? '' : d.start, d.allDay ? '' : d.end, {adults: true}) : ''}
     <label class="f" for="rq-place">Où<input type="text" id="rq-place" data-ch="rqPlace" value="${esc(d.place)}" data-ac="place" autocomplete="off" autocorrect="off" spellcheck="false"></label>
     <label class="f" for="rq-note">Petit mot<textarea id="rq-note" data-ch="rqNote" placeholder="Ex. Le goûter est dans le placard, sieste vers 14h">${esc(d.note)}</textarea></label>
     <div class="sect"><span class="eyebrow">À qui demander</span><div class="chips u-lav">${ps.map(p => `<button class="chip" data-act="rqTo" data-id="${p.id}" aria-pressed="${d.to.includes(p.id)}">${avatar(p.id)}${esc(p.name)}</button>`).join('')}</div>
@@ -168,8 +169,8 @@ Object.assign(H, {
   pJoin: () => joinAsProche(),
 });
 Object.assign(CH, {
-  rqTitle: el => { S.draft.title = el.value; }, rqDate: el => { S.draft.date = el.value; }, rqAll: el => { S.draft.allDay = el.checked; renderSheet(); },
-  rqStart: el => { S.draft.start = el.value; }, rqEnd: el => { S.draft.end = el.value; }, rqPlace: el => { S.draft.place = el.value; }, rqNote: el => { S.draft.note = el.value; },
+  rqTitle: el => { S.draft.title = el.value; }, rqDate: el => { S.draft.date = el.value; renderSheet(); }, rqAll: el => { S.draft.allDay = el.checked; renderSheet(); },
+  rqStart: el => { S.draft.start = el.value; renderSheet(); }, rqEnd: el => { S.draft.end = el.value; renderSheet(); }, rqPlace: el => { S.draft.place = el.value; }, rqNote: el => { S.draft.note = el.value; },
   coNote: el => { S.draft.note = el.value; },
   pCode: el => { const v = el.value.toUpperCase().replace(/[^A-Z0-9]/g,''); if (v !== el.value) el.value = v; S.procheCode = v; },
   pName: el => { S.procheName = el.value; },

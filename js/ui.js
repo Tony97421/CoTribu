@@ -128,6 +128,7 @@ SHEETS.memberEdit = () => {
     <label class="toggle"><input type="checkbox" id="me-kid" data-ch="meKid" ${d.kid?'checked':''}>C’est un enfant</label>
     <span class="info" style="margin-top:-8px">Quand un parent coche une tâche d’un enfant, les points vont à l’enfant.</span>
     <div class="sect"><span class="eyebrow">Couleur</span><div class="chips">${COLORS.map((c,i) => `<button class="chip sq" data-act="meColor" data-v="${i}" aria-pressed="${(d.color||0)===i}" aria-label="Couleur ${i+1}" style="background:${c};border-color:${(d.color||0)===i?'var(--ink)':c};min-height:40px"></button>`).join('')}</div></div>
+    ${typeof scheduleSection === 'function' ? scheduleSection(d) : ''}
     <div class="actions"><button class="btn primary" data-act="saveMemberEdit" ${S.uploading?'disabled':''}>Enregistrer</button><button class="btn soft" data-act="close">Annuler</button></div>`;
 };
 async function uploadAvatar(file, memberId){

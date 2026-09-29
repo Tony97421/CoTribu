@@ -33,6 +33,7 @@ function planWeekView(){
   let h = `<div class="wstrip u-plan">${[0,1,2,3,4,5,6].map(i => { const ds = addDays(mon,i);
     return `<button class="wday ${ds===today?'today':''}" data-act="pickDay" data-v="${ds}" aria-pressed="${ds===day}"><small>${esc(cap(fmt(ds,{weekday:'short'}).replace('.','')))}</small><b>${ymd(ds)[2]}</b><span class="dots">${dayDots(ds)}</span></button>`; }).join('')}</div>`;
   h += dayNav(day, 'shiftDay');
+  h += busyStrip(day);
   const evs = eventsOn(day);
   h += evs.length ? `<div style="display:flex;flex-direction:column;gap:10px">${evs.map(e => evCard(e, day)).join('')}</div>` : `<div class="empty"><span class="muted">Rien de prévu ce jour-là.</span></div>`;
   h += `<div class="u-plan"><button class="addline" data-act="newEvent">${icon('plus',20)}Ajouter un événement</button></div>`;
@@ -44,7 +45,7 @@ function planDayView(){
   const evs = eventsOn(day);
   const allDay = evs.filter(e => e.allDay || !e.start);
   const timed = evs.filter(e => !(e.allDay || !e.start));
-  let h = dayNav(day, 'shiftDay');
+  let h = dayNav(day, 'shiftDay') + busyStrip(day);
   if (allDay.length) h += `<div style="display:flex;flex-direction:column;gap:8px">${allDay.map(e => evCard(e, day)).join('')}</div>`;
   const first = Math.min(7, ...timed.map(e => +e.start.slice(0,2)));
   const last = Math.max(21, ...timed.map(e => +(e.end||e.start).slice(0,2)));
@@ -99,7 +100,7 @@ SHEETS.event = () => {
     <label class="toggle"><input type="checkbox" id="e-all" data-ch="eAll" ${d.allDay?'checked':''}>Toute la journée</label>
     <label class="toggle"><input type="checkbox" id="e-cd" data-ch="eCd" ${d.countdown?'checked':''}>Compte à rebours sur l’accueil</label>
     ${d.allDay ? '' : `<div class="frow"><label class="f" for="e-start">Début<input type="time" id="e-start" data-ch="eStart" value="${esc(d.start||'')}"></label><label class="f" for="e-end">Fin<input type="time" id="e-end" data-ch="eEnd" value="${esc(d.end||'')}"></label></div>`}
-    <div class="sect"><span class="eyebrow">Qui est concerné</span><div class="chips u-plan">${ms.map(m => `<button class="chip" data-act="eMember" data-id="${m.id}" aria-pressed="${d.members.includes(m.id)}">${avatar(m.id)}${esc(m.name)}</button>`).join('')}</div></div>
+    <div class="sect"><span class="eyebrow">Qui est concerné</span><div class="chips u-plan">${ms.map(m => `<button class="chip" data-act="eMember" data-id="${m.id}" aria-pressed="${d.members.includes(m.id)}">${avatar(m.id)}${esc(m.name)}</button>`).join('')}</div>${availLine(d._day || d.date, d.allDay ? '' : d.start, d.allDay ? '' : d.end)}</div>
     <label class="f" for="e-place">Lieu<input type="text" id="e-place" data-ch="ePlace" value="${esc(d.place||'')}" placeholder="Ex. Piscine Petit-Port, Nantes" data-ac="place" autocomplete="off" autocorrect="off" spellcheck="false"></label>
     <div class="maprow"><button class="btn soft sm" data-act="mapsDraft">${icon('map-pin',16)}Voir sur la carte</button><button class="btn soft sm" data-act="mapsDraft" data-dir="1">${icon('car',16)}Itinéraire</button></div>
     <label class="f" for="e-note">Note<textarea id="e-note" data-ch="eNote" placeholder="Ex. Prévoir les jeux et le goûter">${esc(d.note||'')}</textarea></label>
@@ -145,12 +146,12 @@ Object.assign(H, {
 });
 Object.assign(CH, {
   eTitle: el => { S.draft.title = el.value; },
-  eDate: el => { S.draft.date = el.value; },
+  eDate: el => { S.draft.date = el.value; S.draft._day = el.value; renderSheet(); },
   eRep: el => { S.draft.repeat = el.value; },
   eAll: el => { S.draft.allDay = el.checked; renderSheet(); },
   eCd: el => { S.draft.countdown = el.checked; },
-  eStart: el => { S.draft.start = el.value; if (S.draft.end && S.draft.end < el.value) { const [h,m] = el.value.split(':').map(Number); S.draft.end = pad(Math.min(23,h+1))+':'+pad(m); renderSheet(); } },
-  eEnd: el => { S.draft.end = el.value; },
+  eStart: el => { S.draft.start = el.value; if (S.draft.end && S.draft.end < el.value) { const [h,m] = el.value.split(':').map(Number); S.draft.end = pad(Math.min(23,h+1))+':'+pad(m); } renderSheet(); },
+  eEnd: el => { S.draft.end = el.value; renderSheet(); },
   ePlace: el => { S.draft.place = el.value; },
   eNote: el => { S.draft.note = el.value; },
 });

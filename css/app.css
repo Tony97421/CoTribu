@@ -494,3 +494,10 @@ body.sheet-open{overflow:hidden}
 .daychip b{font-size:16px}
 .daychip[aria-pressed="true"]{background:var(--shop);border-color:var(--shop);color:#3B3113}
 .daychip[aria-pressed="true"] small{color:#3B3113}
+.busy{display:flex;flex-direction:column;gap:6px;background:var(--surface);border-radius:16px;padding:10px 12px;border:1px dashed var(--line)}
+.busyrow{display:flex;align-items:center;gap:8px}
+.busyrow .chips{gap:6px}
+.bchip{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;font-weight:600;background:var(--surface2);color:var(--muted);border-radius:999px;padding:4px 9px}
+.avail{display:flex;flex-direction:column;gap:2px;background:var(--plan-soft);border-radius:12px;padding:8px 10px;margin-top:8px}
+.daypick{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.daypick .daychip{padding:10px 0}

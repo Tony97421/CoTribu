@@ -80,6 +80,15 @@ function assigneesOn(t, ds, members) {
   if (a.mode === "rotation" && ids.length) return [ids[mod(Math.floor((idx(ds) - idx(a.anchor || mondayOf(ds))) / 7), ids.length)]];
   return [];
 }
+// emploi du temps (fiche membre) : la personne est-elle au travail / à l'école à cette minute ?
+function busyNow(h, memberId, ds, min) {
+  const m = h.members.get(memberId); if (!m || !Array.isArray(m.schedule)) return false;
+  return m.schedule.some((s) => {
+    if (!(s.days || []).includes(dow(ds)) || !s.start || !s.end) return false;
+    if (s.weeks && s.weeks !== "all" && s.abAnchor) { const even = mod(Math.round((idx(mondayOf(ds)) - idx(s.abAnchor)) / 7), 2) === 0; if (s.weeks === "A" ? !even : even) return false; }
+    return toMin(s.start) <= min && toMin(s.end) > min;
+  });
+}
 function eventOn(e, ds) {
   if (!e || !e.date || ds < e.date) return false;
   if ((e.skip || []).includes(ds)) return false;
@@ -235,6 +244,7 @@ async function tick() {
         if (!t.time || !t.time.at || !h.rooms.has(t.roomId) || !dueToday(t, now.date, pause)) continue;
         if (!assigneesOn(t, now.date, h.members).includes(s.member_id)) continue;
         const delta = toMin(t.time.at) - now.min;
+        if (busyNow(h, s.member_id, now.date, now.min)) continue; // pas pendant le travail ou l'école : on réessaie au passage suivant
         if (delta > 0 && delta <= 35 && await once(`t:${s.endpoint}:${t.id}:${now.date}`)) {
           const body = t.time.mode === "before" ? `À faire avant ${hm(t.time.at)} · dans ${delta} min` : `Prévu à ${hm(t.time.at)} · dans ${delta} min`;
           if (await send(s, { title: t.name, body, tag: `task-${t.id}`, url: "./", ...(await doneAction(s.household_id, t.id, s.member_id, now.date)) })) sent++;
