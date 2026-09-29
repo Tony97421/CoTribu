@@ -81,7 +81,7 @@ VIEWS.plus = () => {
   if (S.sub.plus === 'charge') return viewCharge();
   let h = ptitle('Plus', esc(S.meta.name || 'Notre maison'), syncBadge());
   h += `<div class="menu">
-    ${[['premium','crown','CoTribu Premium', isPremium() ? premiumUntilLabel() : 'L’IA qui fait le travail à votre place','u-warm'],['charge','brain','Charge mentale','Qui pense à quoi, qui le fait','u-lav'],['points','star','Points et récompenses','Les tâches faites rapportent des points','u-shop'],['repas','utensils','Repas','Le menu de la semaine','u-shop'],['souvenirs','heart','Souvenirs','Photos et moments importants','u-mem'],['proches','hand-heart','Proches','Grands-parents, nounou : demandes de garde','u-lav'],['foyer','users','Foyer et famille','Membres, invitation, rappels, Google Agenda','u-home']]
+    ${[['premium','crown','CoTribu Premium', isPremium() ? premiumUntilLabel() : 'L’IA qui fait le travail à votre place','u-warm'],['charge','brain','Charge mentale','Qui pense à quoi, qui le fait','u-lav'],['points','star','Points et récompenses','Les tâches faites rapportent des points','u-shop'],['repas','utensils','Repas','Le menu de la semaine','u-shop'],['souvenirs','heart','Souvenirs','Photos et moments importants','u-mem'],['proches','hand-heart','Proches','Grands-parents, nounou : demandes de garde','u-lav'],['foyer','users','Foyer et famille','Membres, invitation, rappels','u-home']]
       .map(([v,ic,t,s,u]) => `<button class="lrow ${u}" data-act="plusGo" data-v="${v}"><span class="bubble">${icon(ic,20)}</span><span class="body"><span class="t">${t}</span><span class="s">${s}</span></span>${icon('chevron-right',18)}</button>`).join('')}</div>`;
   h += `<div class="menu"><button class="lrow" data-act="guideOpen"><span class="bubble soft" style="--u-soft:var(--home-soft);--u-text:var(--home-text)">${icon('book-open',18)}</span><span class="body"><span class="t">Guide de démarrage</span><span class="s">Revoir comment marche CoTribu</span></span>${icon('chevron-right',18)}</button>
     <button class="lrow" data-act="feedbackOpen"><span class="bubble soft" style="--u-soft:var(--lav-soft);--u-text:var(--lav-text)">${icon('send',18)}</span><span class="body"><span class="t">Une idée ? Un souci ?</span><span class="s">Dis-nous ce qui t’aiderait ou ce qui coince</span></span>${icon('chevron-right',18)}</button>
@@ -97,7 +97,7 @@ function viewFoyer(){
   h += `<div class="card"><h3>Sur ce téléphone, je suis…</h3><div class="chips">${ms.map(m=>`<button class="chip" data-act="me" data-id="${m.id}" aria-pressed="${S.me===m.id}">${avatar(m.id)}${esc(m.name)}</button>`).join('')}</div>
     <span class="muted small">Sert au filtre « Mes tâches », aux rappels et à noter qui a fait quoi. Chaque téléphone choisit le sien.</span></div>`;
   h += pushCard();
-  h += icsCard();
+  // lien Google Agenda retiré (doublon avec les notifications) ; icsCard() reste disponible dans premium.js si besoin
   h += `<div class="card"><h3>Membres</h3>${ms.map(m=>`<div class="mrow">
       <button style="border:0;background:none;padding:0" data-act="editMember" data-id="${m.id}" aria-label="Photo et couleur de ${esc(m.name)}">${avatar(m.id,'lg')}</button>
       <input type="text" id="m-${m.id}" data-ch="memberName" data-id="${m.id}" value="${esc(m.name)}" aria-label="Prénom">

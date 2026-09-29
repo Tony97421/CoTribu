@@ -31,12 +31,12 @@ L'app est ensuite disponible sur `https://tony97421.github.io/CoTribu/`.
 | `js/accueil.js`, `maison.js`, `courses.js`, `planning.js`, `extras.js` | les univers (repas et souvenirs dans `extras.js`) |
 | `js/push.js` | abonnement aux rappels |
 | `js/proches.js` | cercle de proches et demandes de garde |
-| `js/premium.js` | Premium par foyer, codes cadeaux, lien Google Agenda |
+| `js/premium.js` | Premium par foyer, codes cadeaux (lien Google Agenda désactivé dans l’appli) |
 | `js/ai.js` | fonctions IA (Premium) |
 | `js/points.js` | points et récompenses |
 | `supabase/functions/cotribu-push/` | fonction serveur qui envoie les rappels |
 | `supabase/functions/cotribu-ai/` | fonction serveur IA : Gemini (`GEMINI_API_KEY`) ou Claude (`ANTHROPIC_API_KEY`), choix par `AI_PROVIDER` |
-| `supabase/functions/cotribu-ics/` | flux agenda privé pour Google Agenda |
+| `supabase/functions/cotribu-ics/` | flux agenda privé pour Google Agenda (plus proposé dans l’appli) |
 | `supabase/admin.sql` | commandes pour offrir le Premium et créer des codes cadeaux |
 | `sw.js` | cache hors ligne de l'app ; changer `VERSION` à chaque mise en ligne |
 | `manifest.webmanifest`, `icons/` | installation sur l'écran d'accueil |
