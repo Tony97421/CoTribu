@@ -1,7 +1,17 @@
 /* CoTribu — Repas de la semaine et Souvenirs */
 
 /* ---------- Repas ---------- */
-function mealsOn(ds){ return [...S.meals.values()].filter(m => m.date === ds).sort((a,b) => a.slot==='midi' ? -1 : 1); }
+/* un repas peut être prévu à plusieurs moments : m.occ = [{date, slot}] (sinon m.date + m.slot) */
+const SLOTS = [['matin','Matin'],['midi','Midi'],['soir','Soir']];
+const slotRank = s => ({matin:0, midi:1, soir:2}[s] ?? 1);
+function mealOcc(m){ return Array.isArray(m.occ) && m.occ.length ? m.occ : [{date: m.date, slot: m.slot || 'soir'}]; }
+function mealsOn(ds){
+  const out = [];
+  for (const m of S.meals.values()) for (const o of mealOcc(m)) if (o.date === ds) out.push({...m, date: o.date, slot: o.slot});
+  return out.sort((a,b) => slotRank(a.slot) - slotRank(b.slot));
+}
+const shortDay = ds => cap(fmt(ds,{weekday:'short'}).replace('.',''));
+function occLabel(m){ const o = mealOcc(m); return o.length > 1 ? o.slice().sort((a,b) => a.date.localeCompare(b.date) || slotRank(a.slot) - slotRank(b.slot)).map(x => `${shortDay(x.date)} ${x.slot}`).join(' · ') : ''; }
 function parseIngredients(text){
   return String(text||'').split(/\n|;/).map(l => l.replace(/^[-•*]\s*/,'').trim()).filter(Boolean).map(l => { const p = parseItem(l); return {name:p.name, qty:p.qty, aisle:guessAisle(p.name)}; });
 }
@@ -14,8 +24,8 @@ function VIEWS_REPAS(){
     const ds = addDays(mon,i);
     const ms = mealsOn(ds);
     h += `<div class="card u-shop" style="gap:4px${ds===today?';border:2px solid var(--shop)':''}"><div class="row"><h3 style="flex:1">${esc(cap(fmt(ds,{weekday:'long',day:'numeric'})))}</h3>${ds===today?'<span class="pill" style="background:var(--shop-soft);color:var(--shop-text)">Aujourd’hui</span>':''}</div>
-      ${['midi','soir'].map(slot => { const m = ms.find(x => x.slot === slot);
-        return `<div class="meal"><span class="slot">${slot}</span>${m ? `<button class="body" style="border:0;background:none;text-align:left;padding:0;color:inherit" data-act="editMeal" data-id="${m.id}"><div class="t">${esc(m.name)}</div><div class="s">${(m.ingredients||[]).length ? (m.ingredients.length+' ingrédients') : 'Pas d’ingrédients notés'}</div></button>`
+      ${['matin','midi','soir'].filter(slot => slot !== 'matin' || ms.some(x => x.slot === 'matin')).map(slot => { const m = ms.find(x => x.slot === slot);
+        return `<div class="meal"><span class="slot">${slot}</span>${m ? `<button class="body" style="border:0;background:none;text-align:left;padding:0;color:inherit" data-act="editMeal" data-id="${m.id}"><div class="t">${esc(m.name)}</div><div class="s">${(m.ingredients||[]).length ? (m.ingredients.length+' ingrédients') : 'Pas d’ingrédients notés'}${mealOcc(m).length > 1 ? ` · ${mealOcc(m).length} repas` : ''}</div></button>`
           : `<button class="add" data-act="newMeal" data-date="${ds}" data-slot="${slot}">+ Ajouter</button>`}</div>`; }).join('')}</div>`;
   }
   h += `<button class="btn upri block u-shop" data-act="menuOpen">${icon('sparkles',20)}Proposer des menus avec l’IA</button>`;
@@ -26,30 +36,48 @@ SHEETS.meal = () => {
   const d = S.draft;
   return `<h2>${d.id ? 'Modifier le repas' : 'Nouveau repas'}</h2>
     <label class="f" for="me-name">Plat<input type="text" id="me-name" data-ch="meName" value="${esc(d.name)}" placeholder="Ex. Salade de pâtes"></label>
-    <div class="frow"><label class="f" for="me-date">Jour<input type="date" id="me-date" data-ch="meDate" value="${esc(d.date)}"></label>
-      <label class="f" for="me-slot">Moment<select id="me-slot" data-ch="meSlot"><option value="midi" ${d.slot==='midi'?'selected':''}>Midi</option><option value="soir" ${d.slot==='soir'?'selected':''}>Soir</option></select></label></div>
+    <div class="sect"><span class="eyebrow">Quand</span>
+      <div class="chips u-shop">${SLOTS.map(([k,l]) => `<button class="chip" data-act="meSlotTog" data-v="${k}" aria-pressed="${d.slots.includes(k)}">${l}</button>`).join('')}</div>
+      <div class="daychips">${d.week.map(ds => `<button class="daychip" data-act="meDayTog" data-v="${ds}" aria-pressed="${d.days.includes(ds)}"><small>${esc(shortDay(ds))}</small><b>${ymd(ds)[2]}</b></button>`).join('')}</div>
+      <div class="row" style="justify-content:space-between"><button class="linkbtn small" data-act="meWeek" data-v="-7">‹ Sem. préc.</button><span class="muted small">${d.days.length * d.slots.length > 1 ? `${d.days.length * d.slots.length} repas` : ''}</span><button class="linkbtn small" data-act="meWeek" data-v="7">Sem. suiv. ›</button></div>
+      ${d.days.length * d.slots.length > 1 ? `<span class="muted small">Les ingrédients ne sont comptés qu’une fois pour les courses : pense à ajuster les quantités si tu cuisines plusieurs fois.</span>` : ''}</div>
     <label class="f" for="me-ingr">Ingrédients (un par ligne)<textarea id="me-ingr" data-ch="meIngr" rows="6" placeholder="500 g pâtes&#10;6 tomates&#10;1 mozzarella">${esc(d.ingrText)}</textarea></label>
     <div class="actions"><button class="btn primary" data-act="saveMeal">Enregistrer</button><button class="btn soft" data-act="close">Annuler</button></div>
     <button class="btn upri u-shop" data-act="saveMealShop">${icon('shopping-cart',18)}Enregistrer et ajouter aux courses</button>
     ${d.id ? `<button class="btn danger ${S.armed==='meal'?'armed':''}" data-act="delMeal">${S.armed==='meal'?'Confirmer la suppression':'Supprimer ce repas'}</button>` : ''}`;
 };
+function mealDraft(m, date, slot){
+  if (m) {
+    const o = mealOcc(m), days = [...new Set(o.map(x => x.date))], slots = [...new Set(o.map(x => x.slot))];
+    const mon = mondayOf(days.slice().sort()[0]);
+    return {...clone(m), days, slots, week: [0,1,2,3,4,5,6].map(i => addDays(mon, i)), ingrText:(m.ingredients||[]).map(g => (g.qty?g.qty+' ':'')+g.name).join('\n')};
+  }
+  const ds = date || localToday(), mon = mondayOf(ds);
+  return {id:null, name:'', days:[ds], slots:[slot || 'soir'], week: [0,1,2,3,4,5,6].map(i => addDays(mon, i)), ingrText:''};
+}
 function saveMealDraft(){
   const d = S.draft; const name = (d.name||'').trim();
   if (!name) { toast('Écris le nom du plat.'); return null; }
-  const m = {id: d.id || uid('r'), name, date:d.date, slot:d.slot, ingredients: parseIngredients(d.ingrText), by:S.me||null};
+  if (!d.days.length) { toast('Choisis au moins un jour.'); return null; }
+  if (!d.slots.length) { toast('Choisis matin, midi ou soir.'); return null; }
+  const occ = []; d.days.slice().sort().forEach(ds => d.slots.slice().sort((a,b) => slotRank(a) - slotRank(b)).forEach(s => occ.push({date: ds, slot: s})));
+  const m = {id: d.id || uid('r'), name, date: occ[0].date, slot: occ[0].slot, occ, ingredients: parseIngredients(d.ingrText), by:S.me||null};
   put('meals', m); if (!d.id) { if (typeof thinkCredit === 'function') thinkCredit('meals'); } return m;
 }
 Object.assign(H, {
   shiftMealWeek: el => { S.mealWeek = addDays(S.mealWeek || mondayOf(localToday()), +el.dataset.v); render(); },
-  newMeal: el => { S.draft = {id:null, name:'', date: el.dataset.date || localToday(), slot: el.dataset.slot || 'soir', ingrText:''}; openSheet('meal'); },
-  editMeal: el => { const m = S.meals.get(el.dataset.id); if (!m) return; S.draft = {...clone(m), ingrText:(m.ingredients||[]).map(g => (g.qty?g.qty+' ':'')+g.name).join('\n')}; openSheet('meal'); },
+  newMeal: el => { S.draft = mealDraft(null, el.dataset.date, el.dataset.slot); openSheet('meal'); },
+  editMeal: el => { const m = S.meals.get(el.dataset.id); if (!m) return; S.draft = mealDraft(m); openSheet('meal'); },
+  meSlotTog: el => { const d = S.draft, v = el.dataset.v; d.slots = d.slots.includes(v) ? d.slots.filter(x => x !== v) : [...d.slots, v]; renderSheet(); },
+  meDayTog: el => { const d = S.draft, v = el.dataset.v; d.days = d.days.includes(v) ? d.days.filter(x => x !== v) : [...d.days, v]; renderSheet(); },
+  meWeek: el => { const d = S.draft; d.week = d.week.map(x => addDays(x, +el.dataset.v)); renderSheet(); },
   saveMeal: () => { if (saveMealDraft()) { closeSheet(); render(); toast('Repas enregistré'); } },
   saveMealShop: () => { const m = saveMealDraft(); if (!m) return; let n = 0; m.ingredients.forEach(g => { if (addIngredient(g)) n++; }); closeSheet(); render(); toast(n ? `Repas enregistré, ${n} ingrédients ajoutés aux courses` : 'Repas enregistré'); },
   delMeal: () => { if (S.armed !== 'meal') { S.armed = 'meal'; renderSheet(); return; } del('meals', S.draft.id); closeSheet(); render(); },
   goRecipes: () => { S.tab = 'courses'; S.sub.courses = 'recettes'; S.sub.plus = null; render(); window.scrollTo(0,0); },
 });
 Object.assign(CH, {
-  meName: el => { S.draft.name = el.value; }, meDate: el => { S.draft.date = el.value; }, meSlot: el => { S.draft.slot = el.value; }, meIngr: el => { S.draft.ingrText = el.value; },
+  meName: el => { S.draft.name = el.value; }, meIngr: el => { S.draft.ingrText = el.value; },
 });
 ['meName','meIngr'].forEach(k => LIVE.add(k));
 

@@ -1,6 +1,6 @@
 // CoTribu — service worker : cache hors ligne de l'app + réception des notifications.
 // Changer VERSION à chaque mise en ligne.
-const VERSION = 'cotribu-v31';
+const VERSION = 'cotribu-v32';
 const SHELL = [
   './', './index.html', './manifest.webmanifest', './css/app.css',
   './js/icons.js', './js/core.js', './js/store.js', './js/ui.js', './js/maison.js', './js/courses.js',

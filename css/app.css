@@ -488,3 +488,9 @@ body.sheet-open{overflow:hidden}
 .ratecard .linkbtn{align-self:flex-start;font-weight:600}
 .mealcard .mealname{border:0;background:none;padding:0;text-align:left;color:inherit;display:flex;flex-direction:column;gap:2px}
 .mealcard .iconbtn.sm{width:32px;height:32px;background:none;color:var(--muted)}
+.daychips{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.daychip{border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:6px 0;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--ink)}
+.daychip small{font-size:11px;color:var(--muted)}
+.daychip b{font-size:16px}
+.daychip[aria-pressed="true"]{background:var(--shop);border-color:var(--shop);color:#3B3113}
+.daychip[aria-pressed="true"] small{color:#3B3113}

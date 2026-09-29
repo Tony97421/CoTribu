@@ -73,8 +73,9 @@ function coursesAisle(id){
 }
 function weekMeals(){
   const today = localToday();
-  return [...S.meals.values()].filter(m => m.date >= today && m.date <= addDays(today,6) && (m.ingredients||[]).length)
-    .sort((a,b) => a.date.localeCompare(b.date) || (a.slot==='midi'?-1:1));
+  return [...S.meals.values()].filter(m => (m.ingredients||[]).length && mealOcc(m).some(o => o.date >= today && o.date <= addDays(today,6)))
+    .map(m => { const o = mealOcc(m).filter(x => x.date >= today).sort((a,b) => a.date.localeCompare(b.date) || slotRank(a.slot) - slotRank(b.slot))[0]; return {...m, date: o.date, slot: o.slot}; })
+    .sort((a,b) => a.date.localeCompare(b.date) || slotRank(a.slot) - slotRank(b.slot));
 }
 function dayTag(ds){ const t = localToday(); return ds === t ? 'Aujourd’hui' : ds === addDays(t,1) ? 'Demain' : cap(fmt(ds,{weekday:'long'})); }
 function coursesRecipes(){
@@ -84,7 +85,7 @@ function coursesRecipes(){
   meals.forEach(m => (m.ingredients||[]).forEach(g => { if (!missing.some(x => norm(x.name)===norm(g.name))) missing.push({...g, aisle: g.aisle || aisleFor(g.name), meal:m}); }));
   const need = missing.filter(g => !onList(g.name));
   let h = `<div class="row"><h3 style="flex:1">À partir de vos repas de la semaine</h3><button class="btn ghost sm" data-act="addAllIngr">Tout ajouter</button></div>
-    <div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:4px">${meals.map(m => `<div class="ucard u-shop mealcard" style="min-width:160px;flex:none"><div class="row" style="gap:4px"><span class="kicker" style="flex:1">${esc(dayTag(m.date))} · ${m.slot==='midi'?'midi':'soir'}</span><button class="iconbtn sm" data-act="mealDelQuick" data-id="${m.id}" aria-label="Supprimer ${esc(m.name)}">${icon('trash-2',16)}</button></div>
+    <div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:4px">${meals.map(m => `<div class="ucard u-shop mealcard" style="min-width:160px;flex:none"><div class="row" style="gap:4px"><span class="kicker" style="flex:1">${esc(dayTag(m.date))} · ${esc(m.slot)}${mealOcc(m).length > 1 ? ` +${mealOcc(m).length - 1}` : ''}</span><button class="iconbtn sm" data-act="mealDelQuick" data-id="${m.id}" aria-label="Supprimer ${esc(m.name)}">${icon('trash-2',16)}</button></div>
       <button class="mealname" data-act="editMeal" data-id="${m.id}"><strong>${esc(m.name)}</strong><span class="muted small">${(m.ingredients||[]).length} ingrédients · modifier</span></button>
       <button class="btn upri sm u-shop" data-act="addMealIngr" data-id="${m.id}">${icon('plus',16)}Ajouter</button></div>`).join('')}</div>`;
   h += `<h3>Ingrédients manquants (${need.length})</h3>`;

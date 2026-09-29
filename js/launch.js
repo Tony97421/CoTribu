@@ -117,7 +117,7 @@ Object.assign(H, {
   shareMeal: () => {
     const sh = S.shared, name = sh.title || (sh.cands.length > 2 ? '' : sharedFirstLine());
     const ingr = sh.cands.length > 2 ? sh.cands.join('\n') : ''; sharedDone();
-    S.draft = {id:null, name, date: localToday(), slot:'soir', ingrText: ingr}; S.sheet = 'meal'; S.armed = null; renderSheet();
+    S.draft = {...mealDraft(null, localToday(), 'soir'), name, ingrText: ingr}; S.sheet = 'meal'; S.armed = null; renderSheet();
   },
   shareMemory: () => {
     const sh = S.shared, files = sh.files, title = sharedFirstLine(); sharedDone();

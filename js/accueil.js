@@ -40,13 +40,14 @@ VIEWS.today = () => {
   const evs = eventsOn(today);
   const meals = mealsOn(today);
   const hr = new Date().getHours();
-  const meal = meals.find(m => m.slot === (hr < 14 ? 'midi' : 'soir')) || meals[0];
+  const nowSlot = hr < 10 ? 'matin' : hr < 14 ? 'midi' : 'soir';
+  const meal = meals.find(m => m.slot === nowSlot) || meals.find(m => slotRank(m.slot) > slotRank(nowSlot)) || meals[meals.length - 1];
   h += `<div class="grid2">
     <div class="ucard u-plan"><button class="chead" data-act="goPlanDay"><span class="bubble sm">${icon('calendar',16)}</span><h3>Planning</h3><span class="spacer"></span><span class="go">${icon('chevron-right',18)}</span></button>
       ${evs.length ? `<div class="dayline">${evs.slice(0,5).map(e => `<button class="it" style="border:0;background:none;padding:0;text-align:left;color:inherit" data-act="editEvent" data-id="${e.id}" data-day="${today}"><span class="hr"><i style="background:${catOf(e).c}"></i>${e.allDay||!e.start?'Jour':esc(hm(e.start))}</span><span>${esc(e.title)}</span></button>`).join('')}</div>` : '<span class="muted small">Aucun événement aujourd’hui.</span>'}
       <button class="addline" data-act="newEvent">${icon('plus',18)}Événement</button></div>
     <div class="ucard u-shop"><button class="chead" data-act="goRepas"><span class="bubble sm">${icon('utensils',16)}</span><h3>Repas</h3><span class="spacer"></span><span class="go">${icon('chevron-right',18)}</span></button>
-      ${meal ? `<button class="row" style="border:0;background:none;padding:0;text-align:left;color:inherit" data-act="editMeal" data-id="${meal.id}"><span class="mealpic" style="width:56px;height:56px">${icon('soup',26)}</span><span><span class="kicker">${meal.slot==='midi'?'Ce midi':'Ce soir'}</span><br><strong>${esc(meal.name)}</strong></span></button>` : '<span class="muted small">Rien de prévu pour ce soir.</span>'}
+      ${meal ? `<button class="row" style="border:0;background:none;padding:0;text-align:left;color:inherit" data-act="editMeal" data-id="${meal.id}"><span class="mealpic" style="width:56px;height:56px">${icon('soup',26)}</span><span><span class="kicker">${({matin:'Ce matin', midi:'Ce midi', soir:'Ce soir'})[meal.slot] || 'Aujourd’hui'}</span><br><strong>${esc(meal.name)}</strong></span></button>` : '<span class="muted small">Rien de prévu pour ce soir.</span>'}
       <button class="addline" data-act="newMeal" data-date="${today}" data-slot="${hr<14?'midi':'soir'}">${icon('plus',18)}Repas</button></div>
   </div>`;
 
@@ -149,7 +150,7 @@ VIEWS.welcome = () => {
 
 Object.assign(H, {
   quickAdd: () => openSheet('quick'),
-  newMealQ: () => { S.draft = {id:null, name:'', date: localToday(), slot: new Date().getHours() < 14 ? 'midi' : 'soir', ingrText:''}; S.sheet = 'meal'; renderSheet(); },
+  newMealQ: () => { S.draft = mealDraft(null, localToday(), new Date().getHours() < 14 ? 'midi' : 'soir'); S.sheet = 'meal'; renderSheet(); },
   goPlanWeek: () => { S.tab = 'planning'; S.sub.planning = 'semaine'; S.planDay = localToday(); render(); window.scrollTo(0,0); },
   goPlanDay: () => { S.tab = 'planning'; S.sub.planning = 'jour'; S.planDay = localToday(); render(); window.scrollTo(0,0); },
   goRepas: () => { closeSheet(true); S.tab = 'plus'; goSub(() => { S.sub.plus = 'repas'; }); },
