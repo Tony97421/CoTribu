@@ -2,12 +2,15 @@
 // CoTribu — fonction serveur « cotribu-recipe »
 // Lit une page de recette (Marmiton, 750g, Cuisine AZ, Journal des Femmes, CuisineActuelle…) et renvoie
 // son nom et ses ingrédients, grâce aux données « Recipe » que ces sites publient pour Google (schema.org).
-// À déployer avec « Verify JWT » activé (seuls les membres connectés de l'app peuvent l'appeler). Aucun secret nécessaire.
+// À déployer avec « Verify JWT » désactivé : la fonction vérifie elle-même que l'appel vient d'un utilisateur connecté de l'app.
+// Aucun secret à ajouter.
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+const db = createClient(Deno.env.get("SUPABASE_URL"), Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"), { auth: { persistSession: false } });
 const json = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
 // refuse les adresses internes (sécurité)
@@ -50,6 +53,9 @@ function extract(html) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  const jwt = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
+  const { data: who } = jwt ? await db.auth.getUser(jwt) : { data: null };
+  if (!who || !who.user) return json({ error: "non_connecte" }, 401);
   let body = {}; try { body = await req.json(); } catch { /* vide */ }
   const u = publicUrl(body.url);
   if (!u) return json({ error: "lien_invalide" }, 400);

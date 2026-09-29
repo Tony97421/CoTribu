@@ -51,7 +51,7 @@ L'app est ensuite disponible sur `https://tony97421.github.io/CoTribu/`.
 
 ## Recettes partagées
 
-- Fonction `cotribu-recipe` (Edge Functions), avec *Verify JWT* **activé**, aucun secret : lit les ingrédients d'une page de recette (données schema.org « Recipe ») quand on partage un lien vers CoTribu.
+- Fonction `cotribu-recipe` (Edge Functions), avec *Verify JWT* désactivé (elle vérifie elle-même l'utilisateur), aucun secret : lit les ingrédients d'une page de recette (données schema.org « Recipe ») quand on partage un lien vers CoTribu.
 
 ## À venir
 
