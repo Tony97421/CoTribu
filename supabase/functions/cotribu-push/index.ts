@@ -86,7 +86,8 @@ function busyNow(h, memberId, ds, min) {
   return m.schedule.some((s) => {
     if (!(s.days || []).includes(dow(ds)) || !s.start || !s.end) return false;
     if (s.weeks && s.weeks !== "all" && s.abAnchor) { const even = mod(Math.round((idx(mondayOf(ds)) - idx(s.abAnchor)) / 7), 2) === 0; if (s.weeks === "A" ? !even : even) return false; }
-    return toMin(s.start) <= min && toMin(s.end) > min;
+    const t = (s.times && s.times[dow(ds)]) || s; // horaires propres à ce jour
+    return toMin(t.start || s.start) <= min && toMin(t.end || s.end) > min;
   });
 }
 function eventOn(e, ds) {
