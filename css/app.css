@@ -476,3 +476,11 @@ body.sheet-open{overflow:hidden}
 .maplink{color:var(--plan-text);text-decoration:underline;text-decoration-color:color-mix(in srgb, currentColor 40%, transparent);text-underline-offset:2px;cursor:pointer}
 .maprow{display:flex;gap:8px;margin-top:-8px}
 .maprow .btn{flex:1}
+.acbox{margin-top:6px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 26px rgba(0,0,0,.12);overflow:hidden;font-weight:400}
+.acopt{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;color:var(--ink)}
+.acopt+.acopt{border-top:1px solid var(--line)}
+.acopt svg{flex:none;color:var(--plan-text)}
+.acopt span{display:flex;flex-direction:column;min-width:0}
+.acopt b{font-weight:600;font-size:15px;overflow:hidden;text-overflow:ellipsis}
+.acopt small{font-size:12px;color:var(--muted)}
+.acopt.on,.acopt:active{background:var(--plan-soft)}

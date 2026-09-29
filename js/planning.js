@@ -100,8 +100,7 @@ SHEETS.event = () => {
     <label class="toggle"><input type="checkbox" id="e-cd" data-ch="eCd" ${d.countdown?'checked':''}>Compte à rebours sur l’accueil</label>
     ${d.allDay ? '' : `<div class="frow"><label class="f" for="e-start">Début<input type="time" id="e-start" data-ch="eStart" value="${esc(d.start||'')}"></label><label class="f" for="e-end">Fin<input type="time" id="e-end" data-ch="eEnd" value="${esc(d.end||'')}"></label></div>`}
     <div class="sect"><span class="eyebrow">Qui est concerné</span><div class="chips u-plan">${ms.map(m => `<button class="chip" data-act="eMember" data-id="${m.id}" aria-pressed="${d.members.includes(m.id)}">${avatar(m.id)}${esc(m.name)}</button>`).join('')}</div></div>
-    <label class="f" for="e-place">Lieu<input type="text" id="e-place" data-ch="ePlace" value="${esc(d.place||'')}" placeholder="Ex. Piscine Petit-Port, Nantes" list="known-places" autocomplete="off"></label>
-    <datalist id="known-places">${knownPlaces().map(p => `<option value="${esc(p)}"></option>`).join('')}</datalist>
+    <label class="f" for="e-place">Lieu<input type="text" id="e-place" data-ch="ePlace" value="${esc(d.place||'')}" placeholder="Ex. Piscine Petit-Port, Nantes" data-ac="place" autocomplete="off" autocorrect="off" spellcheck="false"></label>
     <div class="maprow"><button class="btn soft sm" data-act="mapsDraft">${icon('map-pin',16)}Voir sur la carte</button><button class="btn soft sm" data-act="mapsDraft" data-dir="1">${icon('car',16)}Itinéraire</button></div>
     <label class="f" for="e-note">Note<textarea id="e-note" data-ch="eNote" placeholder="Ex. Prévoir les jeux et le goûter">${esc(d.note||'')}</textarea></label>
     <div class="actions"><button class="btn primary" data-act="saveEvent">Enregistrer</button><button class="btn soft" data-act="close">Annuler</button></div>

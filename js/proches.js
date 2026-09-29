@@ -73,8 +73,7 @@ SHEETS.request = () => {
     <div class="frow"><label class="f" for="rq-date">Date<input type="date" id="rq-date" data-ch="rqDate" value="${esc(d.date)}"></label></div>
     <label class="toggle"><input type="checkbox" id="rq-all" data-ch="rqAll" ${d.allDay?'checked':''}>Toute la journée</label>
     ${d.allDay ? '' : `<div class="frow"><label class="f" for="rq-start">De<input type="time" id="rq-start" data-ch="rqStart" value="${esc(d.start)}"></label><label class="f" for="rq-end">À<input type="time" id="rq-end" data-ch="rqEnd" value="${esc(d.end)}"></label></div>`}
-    <label class="f" for="rq-place">Où<input type="text" id="rq-place" data-ch="rqPlace" value="${esc(d.place)}" list="known-places" autocomplete="off"></label>
-    <datalist id="known-places">${knownPlaces().map(p => `<option value="${esc(p)}"></option>`).join('')}</datalist>
+    <label class="f" for="rq-place">Où<input type="text" id="rq-place" data-ch="rqPlace" value="${esc(d.place)}" data-ac="place" autocomplete="off" autocorrect="off" spellcheck="false"></label>
     <label class="f" for="rq-note">Petit mot<textarea id="rq-note" data-ch="rqNote" placeholder="Ex. Le goûter est dans le placard, sieste vers 14h">${esc(d.note)}</textarea></label>
     <div class="sect"><span class="eyebrow">À qui demander</span><div class="chips u-lav">${ps.map(p => `<button class="chip" data-act="rqTo" data-id="${p.id}" aria-pressed="${d.to.includes(p.id)}">${avatar(p.id)}${esc(p.name)}</button>`).join('')}</div>
       <span class="info">Si tu choisis plusieurs personnes, la première qui accepte prend la garde.</span></div>
