@@ -571,7 +571,7 @@ body.sheet-open{overflow:hidden}
 .heart.on{color:#E05D5D}
 .heart.on svg{fill:#E05D5D}
 .fabwide-spacer{height:64px}
-.fabwide{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:6;border:0;border-radius:999px;background:var(--shop);color:#3B3113;font-weight:700;font-size:16px;padding:14px 22px;display:flex;align-items:center;gap:8px;box-shadow:0 8px 22px rgba(0,0,0,.18)}
+.fabwide{white-space:nowrap;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:6;border:0;border-radius:999px;background:var(--shop);color:#3B3113;font-weight:700;font-size:16px;padding:14px 22px;display:flex;align-items:center;gap:8px;box-shadow:0 8px 22px rgba(0,0,0,.18)}
 .rhero{position:relative;margin:-8px -16px 0;height:230px;background:var(--shop-soft);overflow:hidden}
 .rhero img,.rhero .rph{width:100%;height:100%;object-fit:cover;display:block}
 .rhero .rph svg{width:64px;height:64px}
