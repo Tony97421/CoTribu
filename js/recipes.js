@@ -170,9 +170,9 @@ SHEETS.fromRecipe = () => {
   const f = S.fr;
   if (f.step === 2) {
     const n = f.ingredients.filter((g,i) => f.pick.has(i)).length;
-    return `<h2>${esc(f.name)}</h2><span class="muted">Coche ce qu’il faut acheter : ce que tu as déjà est décoché.</span>
+    return `<h2>${esc(f.name)}</h2><span class="muted">Ce qui est coché ira dans la liste. Décoche ce que tu as déjà.</span>
       <div class="card" style="gap:0;padding:6px 14px">${f.ingredients.map((g,i) => { const inList = onList(g.name);
-        return `<button class="ringr ${f.pick.has(i)?'':'got'}" data-act="frTog" data-i="${i}"><span class="check">${checkIc()}</span><span class="t">${esc([g.qty, g.name].filter(Boolean).join(' '))}</span>${inList ? `<span class="tag">déjà dans la liste</span>` : ''}</button>`; }).join('')}</div>
+        return `<button class="ringr ${f.pick.has(i)?'buy':'skip'}" data-act="frTog" data-i="${i}"><span class="check">${checkIc()}</span><span class="t">${esc([g.qty, g.name].filter(Boolean).join(' '))}</span>${inList ? `<span class="tag">déjà dans la liste</span>` : ''}</button>`; }).join('')}</div>
       <div class="actions"><button class="btn primary" data-act="frAdd" ${n?'':'disabled'}>${icon('shopping-cart',18)}Ajouter ${n} article${n>1?'s':''}</button><button class="btn soft" data-act="frBack">Retour</button></div>`;
   }
   const today = localToday();

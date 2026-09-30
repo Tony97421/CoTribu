@@ -603,3 +603,6 @@ body.sheet-open{overflow:hidden}
 .recipelink{background:var(--shop-soft);border-radius:14px}
 .rph{display:grid!important;place-items:center}
 .rhero .rph svg,.rimg .rph svg{width:48px;height:48px;opacity:.8}
+.ringr.buy .check{background:var(--shop);border-color:var(--shop)}
+.ringr.buy .check svg{opacity:1;color:#3B3113}
+.ringr.skip .t{color:var(--muted);text-decoration:line-through}
