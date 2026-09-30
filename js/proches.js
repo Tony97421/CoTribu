@@ -113,6 +113,8 @@ VIEWS.proche = () => {
   for (let i=0;i<60;i++){ const ds = addDays(today,i); eventsOn(ds).forEach(e => evs.push([ds,e])); }
   h += `<h2>Mes prochains moments avec la famille</h2>`;
   h += evs.length ? `<div style="display:flex;flex-direction:column;gap:10px">${evs.map(([ds,e]) => `<div class="ev" style="--evc:${catOf(e).c};--evs:${catOf(e).soft}"><span class="bubble">${icon(catOf(e).icon,18)}</span><span class="body"><span class="tm">${esc(cap(fmt(ds,{weekday:'long',day:'numeric',month:'long'})))} · ${esc(evTime(e))}</span><span class="t">${esc(e.title)}</span>${e.place?`<span class="loc">${icon('map-pin',13)}${placeLink(e.place)}</span>`:''}</span></div>`).join('')}</div>` : '<span class="muted">Rien de prévu.</span>';
+  const mems = [...S.memories.values()].filter(m => (m.proches||[]).includes(S.me)).sort((a,b) => b.date.localeCompare(a.date));
+  if (mems.length) h += `<h2>Souvenirs partagés avec toi</h2><div style="display:flex;flex-direction:column;gap:12px">${mems.slice(0, 20).map(memoCard).join('')}</div>`;
   h += pushCard() + installCard(false);
   h += `<div class="card"><span class="muted small">Tu ne vois que ce que la famille partage avec toi.</span><button class="btn danger ${S.armed==='leave'?'armed':''}" data-act="leave">${S.armed==='leave'?'Confirmer : quitter ce cercle':'Quitter ce cercle sur ce téléphone'}</button></div>`;
   return h;

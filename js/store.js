@@ -156,7 +156,10 @@ async function joinAsProche(){
     S.busy = false;
     await openHousehold(h, hu ? hu.role : 'proche', hu ? hu.member_id : null);
     toast('Bienvenue ! Tu es maintenant proche de « ' + h.name + ' »');
-  } catch(e) { S.busy = false; render(); toast(explain(e)); }
+  } catch(e) {
+    S.busy = false; render();
+    toast(String(e && e.message || '').includes('code_invalide') ? 'Code proche introuvable. Si c’est un code famille, choisis « Membre de la famille ».' : explain(e));
+  }
 }
 async function joinHousehold(){
   const code = (S.joinCode||'').trim().toUpperCase();
@@ -172,7 +175,11 @@ async function joinHousehold(){
     const {data:hu} = await sb.from('household_users').select('role, member_id').eq('household_id', h.id).eq('user_id', u.id).maybeSingle();
     await openHousehold(h, hu ? hu.role : 'member', hu ? hu.member_id : null);
     toast('Bienvenue dans « ' + h.name + ' »');
-  } catch(e) { S.busy = false; render(); toast(explain(e)); }
+  } catch(e) {
+    S.busy = false;
+    if (String(e && e.message || '').includes('code_invalide')) { S.joinAs = 'proche'; S.procheCode = code; render(); toast('Ce n’est pas un code famille. Si on t’a invité comme proche, écris ton prénom puis « Rejoindre le cercle ».'); return; }
+    render(); toast(explain(e));
+  }
 }
 async function setMe(id){
   S.me = id; LS.set('cotribu-me-'+S.hh.id, id); render();
@@ -214,7 +221,7 @@ function installCard(compact){
   if (installEvt) return `<div class="card install"><h3>Installer CoTribu</h3><span class="small">Une icône sur ton écran d’accueil, comme une vraie app.</span>
     <div class="actions"><button class="btn primary" data-act="install">Installer</button>${compact?'<button class="btn soft" data-act="later">Plus tard</button>':''}</div></div>`;
   if (isIOS()) return `<div class="card install"><h3>Ajoute CoTribu à ton écran d’accueil</h3>
-    <ol class="steps"><li>Touche ${shareSvg} <b>Partager</b> en bas de Safari</li><li>Choisis <b>Sur l’écran d’accueil</b></li><li>Ouvre CoTribu depuis sa nouvelle icône</li></ol>
+    <ol class="steps"><li>Touche ${shareSvg} <b>Partager</b> en bas de Safari</li><li>Choisis <b>Sur l’écran d’accueil</b></li><li>Ouvre CoTribu depuis sa nouvelle icône</li>${S.hh ? `<li>Sur iPhone, l’appli installée repart de zéro : touche <b>Rejoindre</b>${S.role === 'proche' ? ', choisis <b>Proche</b>, écris ton prénom' : ''} et entre ce code : <b class="num">${esc((S.role === 'proche' ? S.hh.proche_code : S.hh.invite_code) || '')}</b></li>` : ''}</ol>
     ${compact?'<div class="actions"><button class="btn soft" data-act="later">Plus tard</button></div>':''}</div>`;
   return '';
 }

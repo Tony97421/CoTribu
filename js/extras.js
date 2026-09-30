@@ -106,7 +106,7 @@ function VIEWS_SOUVENIRS(){
   return h;
 };
 function draftMemory(m, pre={}){
-  if (m) return {...clone(m), photos:[...(m.photos||[])], members:[...(m.members||[])], _new:[]};
+  if (m) return {...clone(m), photos:[...(m.photos||[])], members:[...(m.members||[])], proches:[...(m.proches||[])], _new:[]};
   return {id:null, title:pre.title||'', date:pre.date||localToday(), text:'', members:pre.members?[...pre.members]:[], photos:[], eventId:pre.eventId||null, _new:[]};
 }
 SHEETS.memory = () => {
@@ -119,16 +119,19 @@ SHEETS.memory = () => {
       <label class="btn soft filebtn u-mem" style="background:var(--mem-soft);color:var(--mem-text)">${icon('camera',18)}${S.uploading?'Envoi en cours…':'Ajouter des photos'}<input type="file" id="mo-files" accept="image/*" multiple data-ch="moFiles" ${S.uploading?'disabled':''}></label></div>
     <label class="f" for="mo-text">Quelques mots<textarea id="mo-text" data-ch="moText" placeholder="Ce qu’on veut se rappeler de ce jour-là">${esc(d.text||'')}</textarea></label>
     <div class="sect"><span class="eyebrow">Qui était là</span><div class="chips u-mem">${ms.map(m => `<button class="chip" data-act="moMember" data-id="${m.id}" aria-pressed="${d.members.includes(m.id)}">${avatar(m.id)}${esc(m.name)}</button>`).join('')}</div></div>
+    ${S.proches.size ? `<div class="sect"><span class="eyebrow">Partager avec les proches</span><div class="chips u-lav">${sorted(S.proches).map(p => `<button class="chip" data-act="moProche" data-id="${p.id}" aria-pressed="${(d.proches||[]).includes(p.id)}">${avatar(p.id)}${esc(p.name)}</button>`).join('')}</div>
+      <span class="muted small">Seuls les proches choisis verront ce souvenir et ses photos. Les autres souvenirs restent privés.</span></div>` : ''}
     <div class="actions"><button class="btn primary" data-act="saveMemory" ${S.uploading?'disabled':''}>Enregistrer</button><button class="btn soft" data-act="cancelMemory">Annuler</button></div>
     ${d.id ? `<button class="btn danger ${S.armed==='memory'?'armed':''}" data-act="delMemory">${S.armed==='memory'?'Confirmer : supprimer le souvenir et ses photos':'Supprimer ce souvenir'}</button>` : ''}`;
 };
 SHEETS.memoryView = () => {
   const m = S.memories.get(S.viewId); if (!m) return '';
-  return `<div class="row"><div style="flex:1"><span class="kicker" style="color:var(--mem-text)">${esc(fmt(m.date,{weekday:'long',day:'numeric',month:'long',year:'numeric'}))}</span><h2>${esc(m.title)}</h2></div><button class="iconbtn" data-act="editMemory" data-id="${m.id}" aria-label="Modifier">${icon('pencil',18)}</button></div>
+  return `<div class="row"><div style="flex:1"><span class="kicker" style="color:var(--mem-text)">${esc(fmt(m.date,{weekday:'long',day:'numeric',month:'long',year:'numeric'}))}</span><h2>${esc(m.title)}</h2></div>${S.role === 'proche' ? '' : `<button class="iconbtn" data-act="editMemory" data-id="${m.id}" aria-label="Modifier">${icon('pencil',18)}</button>`}</div>
     ${(m.photos||[]).length ? `<div class="photos">${m.photos.map(p => `<button class="ph" data-act="viewPhoto" data-path="${esc(p)}">${photoImg(p)}</button>`).join('')}</div>` : ''}
     ${(m.photos||[]).length > 1 ? `<button class="btn upri u-mem" data-act="slidesMemory" data-id="${m.id}">${icon('play',18)}Diaporama</button>` : ''}
     ${m.text ? `<p style="margin:0;white-space:pre-wrap">${esc(m.text)}</p>` : ''}
     ${(m.members||[]).length ? `<div class="row">${avatars(m.members.filter(id=>S.members.has(id)))}<span class="muted small">${esc(m.members.filter(id=>S.members.has(id)).map(nameOf).join(', '))}</span></div>` : ''}
+    ${S.role !== 'proche' && (m.proches||[]).some(id => S.proches.has(id)) ? `<span class="muted small">${icon('hand-heart',14)} Partagé avec ${esc(m.proches.filter(id => S.proches.has(id)).map(nameOf).join(', '))}</span>` : ''}
     <button class="btn soft" data-act="close">Fermer</button>`;
 };
 Object.assign(H, {
@@ -136,12 +139,13 @@ Object.assign(H, {
   newMemory: () => { S.draft = draftMemory(null); openSheet('memory'); },
   openMemory: el => { S.viewId = el.dataset.id; openSheet('memoryView'); setTimeout(afterRender, 0); },
   editMemory: el => { S.draft = draftMemory(S.memories.get(el.dataset.id)); S.sheet = 'memory'; S.armed = null; renderSheet(); afterRender(); },
+  moProche: el => { const d = S.draft, id = el.dataset.id; d.proches = (d.proches||[]).includes(id) ? d.proches.filter(x => x !== id) : [...(d.proches||[]), id]; renderSheet(); afterRender(); },
   moMember: el => { const d = S.draft, id = el.dataset.id; d.members = d.members.includes(id) ? d.members.filter(x=>x!==id) : [...d.members, id]; renderSheet(); afterRender(); },
   rmPhoto: el => { const p = S.draft.photos.splice(+el.dataset.i, 1)[0]; (S.draft._rm = S.draft._rm || []).push(p); renderSheet(); afterRender(); },
   saveMemory: () => {
     const d = S.draft; const title = (d.title||'').trim();
     if (!title) { toast('Donne un titre au souvenir.'); return; }
-    const m = {id: d.id || uid('s'), title, date: d.date || localToday(), text:(d.text||'').trim(), members:d.members, photos:d.photos, eventId:d.eventId||null, by:S.me||null};
+    const m = {id: d.id || uid('s'), title, date: d.date || localToday(), text:(d.text||'').trim(), members:d.members, proches:(d.proches||[]).filter(id => S.proches.has(id)), photos:d.photos, eventId:d.eventId||null, by:S.me||null};
     put('memories', m); if (!d.id) { if (typeof thinkCredit === 'function') thinkCredit('memories'); }
     if (d._rm && d._rm.length) removePhotos(d._rm).catch(()=>{});
     closeSheet(); render(); toast(d.id ? 'Souvenir modifié' : 'Souvenir ajouté');

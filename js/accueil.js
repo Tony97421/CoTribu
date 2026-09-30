@@ -132,9 +132,16 @@ VIEWS.welcome = () => {
   }
   h += seg('wMode', S.welcomeMode, [['create','Créer un foyer'],['join','Rejoindre un foyer']], 'u-home');
   if (S.welcomeMode === 'join') {
-    h += `<div class="card"><h3>Code d’invitation</h3><span class="muted small">Demande-le à la personne qui a créé le foyer (Plus → Foyer).</span>
-      <input type="text" id="j-code" class="codein num" data-ch="jCode" value="${esc(S.joinCode)}" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC234">
-      <button class="btn deep" data-act="join" ${S.busy?'disabled':''}>${S.busy?'Connexion…':'Rejoindre'}</button></div>`;
+    const asP = S.joinAs === 'proche';
+    h += `<div class="card"><h3>Tu rejoins en tant que…</h3>
+      <div class="chips u-home"><button class="chip" data-act="joinAs" data-v="family" aria-pressed="${!asP}">${icon('users',16)}Membre de la famille</button><button class="chip" data-act="joinAs" data-v="proche" aria-pressed="${asP}">${icon('hand-heart',16)}Proche (grand-parent, nounou…)</button></div>
+      ${asP ? `<span class="muted small">Tu verras seulement ce que la famille partage avec toi : demandes de garde, moments où tu es attendu, souvenirs partagés.</span>
+        <label class="f" for="p-name">Ton prénom, ou comment la famille t’appelle<input type="text" id="p-name" data-ch="pName" value="${esc(S.procheName||'')}" placeholder="Ex. Mamie, Tata Nane"></label>
+        <label class="f" for="p-code">Code proche<input type="text" id="p-code" class="codein num" data-ch="pCode" value="${esc(S.procheCode||'')}" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC234"></label>
+        <button class="btn upri u-lav" data-act="pJoin" ${S.busy?'disabled':''}>${S.busy?'Connexion…':'Rejoindre le cercle'}</button>`
+      : `<span class="muted small">Demande le code à la personne qui a créé le foyer (Plus → Foyer et famille).</span>
+        <input type="text" id="j-code" class="codein num" data-ch="jCode" value="${esc(S.joinCode)}" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC234">
+        <button class="btn deep" data-act="join" ${S.busy?'disabled':''}>${S.busy?'Connexion…':'Rejoindre'}</button>`}</div>`;
   } else {
     h += `<div class="card"><label class="f" for="w-home">Nom du foyer<input type="text" id="w-home" data-ch="wHome" value="${esc(S.wHome||'')}" placeholder="Famille Martin"></label></div>
     <div class="card"><h3>Qui vit ici ?</h3>${names.map((n,i)=>`<input type="text" id="w-m${i}" data-ch="wName" data-i="${i}" value="${esc(n)}" placeholder="${i===0?'Ton prénom':'Prénom '+(i+1)}">`).join('')}
@@ -160,6 +167,7 @@ Object.assign(H, {
   dismissBilan: el => { LS.set('cotribu-dismiss-bilan', el.dataset.v); render(); },
   plusGo: el => { if (S.tab !== 'plus') S.tab = 'plus'; goSub(() => { S.sub.plus = el.dataset.v; }); if (el.dataset.v === 'premium') loadAiUsage(); },
   wMode: el => { S.welcomeMode = el.dataset.v; render(); },
+  joinAs: el => { const v = el.dataset.v; if (v === 'proche' && !S.procheCode) S.procheCode = S.joinCode; if (v === 'family' && !S.joinCode) S.joinCode = S.procheCode; S.joinAs = v; render(); },
   wAdd: () => { S.welcome.push(''); render(); },
   wGo: () => createHousehold(),
   join: () => joinHousehold(),
