@@ -172,10 +172,10 @@ function doneStats(days=30){
 function balanceCard(){
   const c = doneStats(), total = Object.values(c).reduce((a,b)=>a+b,0);
   const max = Math.max(1, ...Object.values(c));
-  return `<div class="card u-home"><div class="row"><span class="bubble soft">${icon('users',18)}</span><h3 style="flex:1">Qui fait quoi (30 jours)</h3>${isPremium()?'':'<span class="lock">Premium</span>'}</div>
+  return `<div class="card u-home"><div class="row"><span class="bubble soft">${icon('users',18)}</span><h3 style="flex:1">Qui fait quoi (30 jours)</h3>${isPremium() || !AI_ON ?'':'<span class="lock">Premium</span>'}</div>
     ${total ? `<div class="bars">${sorted(S.members).map(m => `<div class="barrow"><span class="n">${esc(m.name)}</span><span class="track"><b style="width:${Math.round(c[m.id]/max*100)}%;background:${memberColor(m)}"></b></span><span class="v">${c[m.id]}</span></div>`).join('')}</div>`
       : '<span class="muted small">Les statistiques apparaîtront quand des tâches auront été cochées (en choisissant « Je suis… » sur chaque téléphone).</span>'}
-    <button class="btn upri" data-act="balanceAsk">${icon('sparkles',18)}Conseils de l’IA pour mieux répartir</button></div>`;
+    ${AI_ON ? `<button class="btn upri" data-act="balanceAsk">${icon('sparkles',18)}Conseils de l’IA pour mieux répartir</button>` : ''}</div>`;
 }
 SHEETS.aiBalance = () => {
   const b = S.aiB;

@@ -6,7 +6,7 @@ VIEWS.today = () => {
   const list = tasks.filter(x => !x.st.late), late = tasks.filter(x => x.st.late);
   const done = list.filter(x=>x.st.done).length, total = list.length;
   let h = ptitle('Aujourd’hui', esc(cap(fmt(today,{weekday:'long', day:'numeric', month:'long', year:'numeric'}))),
-    `<div class="row"><button class="pillbtn" data-act="aiOpen" aria-label="Ajouter avec l’IA">${icon('sparkles',18)}IA</button><button class="pillbtn" data-act="goPlanWeek">${icon('calendar-days',18)}Semaine</button><button class="fab" data-act="quickAdd" aria-label="Ajouter">${icon('plus',26)}</button></div>`);
+    `<div class="row">${AI_ON ? `<button class="pillbtn" data-act="aiOpen" aria-label="Ajouter avec l’IA">${icon('sparkles',18)}IA</button>` : ''}<button class="pillbtn" data-act="goPlanWeek">${icon('calendar-days',18)}Semaine</button><button class="fab" data-act="quickAdd" aria-label="Ajouter">${icon('plus',26)}</button></div>`);
   if (!S.dismissed.hello && LS.get('cotribu-dismiss-hello') !== today) {
     const hr = new Date().getHours();
     const hello = hr < 12 ? 'Belle journée à toute la tribu !' : hr < 18 ? 'Bel après-midi à la tribu !' : 'Bonne soirée à la tribu !';
@@ -26,7 +26,7 @@ VIEWS.today = () => {
   // Tâches du jour
   const shown = [...late, ...list].slice(0, 6);
   h += `<div class="card u-home"><button class="chead" data-act="tab" data-v="maison"><span class="bubble soft">${icon('circle-check',20)}</span><h3>Tâches du jour</h3><span class="go">${icon('chevron-right',18)}</span><span class="spacer"></span>
-      <span class="muted small num" style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">${done}/${total} terminées<span class="pbar" style="width:110px"><b style="width:${total?Math.round(done/total*100):0}%"></b></span></span></button>
+      <span class="muted small num" style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">${done}/${total} terminées<span class="pbar" style="width:88px"><b style="width:${total?Math.round(done/total*100):0}%"></b></span></span></button>
     <div class="mini">${shown.map(x => taskRow(x, today, {noFreq:true})).join('') || '<span class="muted small">Rien de prévu aujourd’hui.</span>'}</div>
     ${tasks.length > shown.length ? `<button class="btn ghost sm" data-act="tab" data-v="maison">Voir les ${tasks.length} tâches</button>` : ''}
     <button class="addline" data-act="newTask">${icon('plus',20)}Ajouter une tâche</button></div>`;
@@ -66,7 +66,7 @@ VIEWS.today = () => {
   return h;
 };
 SHEETS.quick = () => `<h2>Ajouter</h2><div class="menu">
-  ${[['aiOpen','sparkles','Écrire ou dicter (IA)','u-warm'],['newTask','circle-check','Une tâche','u-home'],['newEvent','calendar','Un événement','u-plan'],['goAddItem','shopping-cart','Un article de courses','u-shop'],['newMealQ','utensils','Un repas','u-shop'],['newMemory','heart','Un souvenir','u-mem'],['newRequest','hand-heart','Une demande à un proche','u-lav']]
+  ${[...(AI_ON ? [['aiOpen','sparkles','Écrire ou dicter (IA)','u-warm']] : []),['newTask','circle-check','Une tâche','u-home'],['newEvent','calendar','Un événement','u-plan'],['goAddItem','shopping-cart','Un article de courses','u-shop'],['newMealQ','utensils','Un repas','u-shop'],['newMemory','heart','Un souvenir','u-mem'],['newRequest','hand-heart','Une demande à un proche','u-lav']]
     .map(([a,ic,l,u]) => `<button class="lrow ${u}" data-act="${a}"><span class="bubble sm">${icon(ic,16)}</span><span class="body"><span class="t">${l}</span></span>${icon('chevron-right',18)}</button>`).join('')}</div>
   <button class="btn soft" data-act="close">Fermer</button>`;
 
@@ -142,7 +142,7 @@ VIEWS.welcome = () => {
       <button class="btn soft" data-act="wAdd">${icon('plus',18)}Ajouter quelqu’un</button></div>
     <div class="card"><h3>Modèle « Entretien maison standard »</h3>
       <span class="small muted">Lundi courses et frigo · mardi cuisine · mercredi chambre enfant · jeudi chambre parents · vendredi salle de bain et WC · dimanche salon. Tout se modifie ensuite.</span>
-      <label class="f" for="w-desc">Ou décris ta maison, l’IA prépare tout (facultatif)<textarea id="w-desc" data-ch="wDesc" placeholder="Ex. maison avec jardin, 2 enfants de 6 et 10 ans, un chien, on travaille tous les deux">${esc(S.wDesc||'')}</textarea></label>
+      ${AI_ON ? `<label class="f" for="w-desc">Ou décris ta maison, l’IA prépare tout (facultatif)<textarea id="w-desc" data-ch="wDesc" placeholder="Ex. maison avec jardin, 2 enfants de 6 et 10 ans, un chien, on travaille tous les deux">${esc(S.wDesc||'')}</textarea></label>` : ''}
       <button class="btn deep" data-act="wGo" ${S.busy?'disabled':''}>${S.busy?'Création…':'Créer le foyer'}</button></div>`;
   }
   return h;

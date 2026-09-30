@@ -96,7 +96,7 @@ function VIEWS_SOUVENIRS(){
   const tb = throwback();
   if (tb) h += `<div class="ucard u-mem"><span class="kicker">${esc(agoLabel(tb))}</span><button class="row" style="border:0;background:none;padding:0;text-align:left;color:inherit" data-act="openMemory" data-id="${tb.id}">${(tb.photos||[])[0]?`<span class="memthumb">${photoImg(tb.photos[0])}</span>`:''}<span><strong>${esc(tb.title)}</strong><br><span class="muted small">${esc(fmt(tb.date,{day:'numeric',month:'long',year:'numeric'}))}</span></span></button></div>`;
   if ([...S.memories.values()].some(m => (m.photos||[]).length)) h += `<button class="btn upri u-mem" data-act="slidesAll">${icon('play',18)}Diaporama des souvenirs</button>`;
-  h += `<button class="btn soft u-mem" style="background:var(--mem-soft);color:var(--mem-text)" data-act="goAlbum">${icon('book-open',18)}Album de l’année (IA)</button>`;
+  if (AI_ON) h += `<button class="btn soft u-mem" style="background:var(--mem-soft);color:var(--mem-text)" data-act="goAlbum">${icon('book-open',18)}Album de l’année (IA)</button>`;
   const f = S.memFilter || 'all';
   h += `<div class="chips u-mem"><button class="chip" data-act="memFilter" data-v="all" aria-pressed="${f==='all'}">Tout le monde</button>${sorted(S.members).map(m => `<button class="chip" data-act="memFilter" data-v="${m.id}" aria-pressed="${f===m.id}">${avatar(m.id)}${esc(m.name)}</button>`).join('')}</div>`;
   const list = [...S.memories.values()].filter(m => f === 'all' || (m.members||[]).includes(f)).sort((a,b) => b.date.localeCompare(a.date));

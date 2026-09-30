@@ -33,7 +33,7 @@ const mondayOf = (ds) => addDays(ds, -((dow(ds) + 6) % 7));
 const mod = (a, n) => ((a % n) + n) % n;
 const ymd = (ds) => ds.split("-").map(Number);
 const dim = (y, m) => new Date(Date.UTC(y, m, 0)).getUTCDate();
-const hm = (t) => (t ? t.replace(":", "h") : "");
+const hm = (t) => { if (!t) return ""; const [h, m] = String(t).split(":"); return `${+h}h${m && m !== "00" ? m : ""}`; };
 
 function isOn(rec, ds) {
   if (!rec) return false;

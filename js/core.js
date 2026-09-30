@@ -327,6 +327,9 @@ function eventsOn(ds){
     .sort((a,b) => (a.allDay?'':(a.start||'99')).localeCompare(b.allDay?'':(b.start||'99')));
 }
 const REPEATS = [['none','Une seule fois'],['daily','Tous les jours'],['weekly','Chaque semaine'],['biweekly','Une semaine sur deux'],['monthly','Chaque mois'],['yearly','Chaque année']];
-const hm = t => t ? t.replace(':','h') : '';
+// heures lisibles : « 9h », « 9h30 », « 18h »
+const hm = t => { if (!t) return ''; const [h, m] = String(t).split(':'); return `${+h}h${m && m !== '00' ? m : ''}`; };
+// L'IA est prête mais pas encore activée (clé à ajouter au lancement) : on masque ses boutons tant que AI_ON est faux
+const AI_ON = false;
 const timeLabel = tm => !tm || !tm.at ? '' : (tm.mode === 'before' ? 'Avant ' + hm(tm.at) : hm(tm.at));
 const nowHM = () => { const d = new Date(); return pad(d.getHours()) + ':' + pad(d.getMinutes()); };

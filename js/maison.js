@@ -18,7 +18,7 @@ function todayItems(today, opts={}){
 }
 function whenLabel(x){
   if (x.st.late) return `<span class="tag late">En retard</span>`;
-  return esc(timeLabel(x.t.time) || 'Aujourd’hui');
+  return esc(timeLabel(x.t.time) || '');
 }
 function taskRow(x, today, opts={}){
   const {t, st, r} = x;
