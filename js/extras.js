@@ -15,39 +15,23 @@ function occLabel(m){ const o = mealOcc(m); return o.length > 1 ? o.slice().sort
 function parseIngredients(text){
   return String(text||'').split(/\n|;/).map(l => l.replace(/^[-•*]\s*/,'').trim()).filter(Boolean).map(l => { const p = parseItem(l); return {name:p.name, qty:p.qty, aisle:guessAisle(p.name)}; });
 }
-function VIEWS_REPAS(){
-  const today = localToday();
-  const mon = S.mealWeek || mondayOf(today);
-  let h = `${backBtn('Plus')}` + ptitle('Repas', 'Le menu de la semaine, et les courses qui vont avec.');
-  h += `<div class="dayhead"><button class="navb" data-act="shiftMealWeek" data-v="-7" aria-label="Semaine précédente">${icon('chevron-left',20)}</button><h2>Semaine du ${esc(fmt(mon,{day:'numeric',month:'long'}))}</h2><button class="navb" data-act="shiftMealWeek" data-v="7" aria-label="Semaine suivante">${icon('chevron-right',20)}</button></div>`;
-  for (let i=0;i<7;i++){
-    const ds = addDays(mon,i);
-    const ms = mealsOn(ds);
-    h += `<div class="card u-shop" style="gap:4px${ds===today?';border:2px solid var(--shop)':''}"><div class="row"><h3 style="flex:1">${esc(cap(fmt(ds,{weekday:'long',day:'numeric'})))}</h3>${ds===today?'<span class="pill" style="background:var(--shop-soft);color:var(--shop-text)">Aujourd’hui</span>':''}</div>
-      ${['matin','midi','soir'].filter(slot => slot !== 'matin' || ms.some(x => x.slot === 'matin')).map(slot => { const m = ms.find(x => x.slot === slot);
-        return `<div class="meal"><span class="slot">${slot}</span>${m ? `${(m.steps||[]).length ? `<button class="iconbtn cookmini" data-act="cook" data-id="${m.id}" aria-label="Cuisiner ${esc(m.name)}">${icon('chef-hat',18)}</button>` : ''}<button class="body" style="border:0;background:none;text-align:left;padding:0;color:inherit" data-act="editMeal" data-id="${m.id}"><div class="t">${esc(m.name)}</div><div class="s">${(m.ingredients||[]).length ? (m.ingredients.length+' ingrédients') : 'Pas d’ingrédients notés'}${mealOcc(m).length > 1 ? ` · ${mealOcc(m).length} repas` : ''}</div></button>`
-          : `<button class="add" data-act="newMeal" data-date="${ds}" data-slot="${slot}">+ Ajouter</button>`}</div>`; }).join('')}</div>`;
-  }
-  h += `<button class="btn upri block u-shop" data-act="menuOpen">${icon('sparkles',20)}Proposer des menus avec l’IA</button>`;
-  h += `<button class="btn deep block" data-act="goRecipes">${icon('shopping-cart',20)}Voir les ingrédients à acheter</button>`;
-  return h;
-};
 SHEETS.meal = () => {
   const d = S.draft;
-  return `<h2>${d.id ? 'Modifier le repas' : 'Nouveau repas'}</h2>
-    <label class="f" for="me-name">Plat<input type="text" id="me-name" data-ch="meName" value="${esc(d.name)}" placeholder="Ex. Salade de pâtes"></label>
-    ${d.id || (d.stepsText||'').trim() ? `<button class="btn upri u-shop cookbtn" data-act="cookFromDraft">${icon('chef-hat',20)}<span><b>Cuisiner ce plat</b><small>Les étapes en grand, une par une, avec minuteurs</small></span></button>` : ''}
+  const rec = d.recipeId ? S.recipes.get(d.recipeId) : null;
+  return `<h2>${d.id ? 'Modifier ou déplacer' : 'Nouveau repas'}</h2>
+    ${rec ? `<div class="lrow u-shop recipelink"><span class="rthumb">${recipeImg(rec)}</span><span class="body"><span class="t">${esc(rec.name)}</span><span class="s">Recette du carnet · ${(rec.ingredients||[]).length} ingrédients</span></span></div>`
+      : `<label class="f" for="me-name">Repas<input type="text" id="me-name" data-ch="meName" value="${esc(d.name)}" placeholder="Ex. Salade de pâtes, restes, pizza…"></label>`}
     <div class="sect"><span class="eyebrow">Quand</span>
       <div class="chips u-shop">${SLOTS.map(([k,l]) => `<button class="chip" data-act="meSlotTog" data-v="${k}" aria-pressed="${d.slots.includes(k)}">${l}</button>`).join('')}</div>
       <div class="daychips">${d.week.map(ds => `<button class="daychip" data-act="meDayTog" data-v="${ds}" aria-pressed="${d.days.includes(ds)}"><small>${esc(shortDay(ds))}</small><b>${ymd(ds)[2]}</b></button>`).join('')}</div>
       <div class="row" style="justify-content:space-between"><button class="linkbtn small" data-act="meWeek" data-v="-7">‹ Sem. préc.</button><span class="muted small">${d.days.length * d.slots.length > 1 ? `${d.days.length * d.slots.length} repas` : ''}</span><button class="linkbtn small" data-act="meWeek" data-v="7">Sem. suiv. ›</button></div>
       ${d.days.length * d.slots.length > 1 ? `<span class="muted small">Les ingrédients ne sont comptés qu’une fois pour les courses : pense à ajuster les quantités si tu cuisines plusieurs fois.</span>` : ''}</div>
-    <label class="f" for="me-ingr">Ingrédients (un par ligne)<textarea id="me-ingr" data-ch="meIngr" rows="6" placeholder="500 g pâtes&#10;6 tomates&#10;1 mozzarella">${esc(d.ingrText)}</textarea></label>
-    <label class="f" for="me-steps">Étapes de la recette (une par ligne, facultatif)<textarea id="me-steps" data-ch="meSteps" rows="5" placeholder="Faire cuire les pâtes 10 min&#10;Couper les tomates…">${esc(d.stepsText||'')}</textarea></label>
-    ${d.url ? `<a class="linkbtn small" href="${esc(d.url)}" target="_blank" rel="noopener">${icon('book-open',14)} Voir la recette d’origine</a>` : ''}
+    ${rec ? '' : `<label class="f" for="me-ingr">Ingrédients (facultatif, un par ligne)<textarea id="me-ingr" data-ch="meIngr" rows="4" placeholder="500 g pâtes&#10;6 tomates">${esc(d.ingrText)}</textarea></label>
+      ${(d.stepsText||'').trim() ? `<label class="f" for="me-steps">Étapes<textarea id="me-steps" data-ch="meSteps" rows="4">${esc(d.stepsText||'')}</textarea></label>` : ''}
+      <span class="muted small">Un plat que vous refaites souvent ? Enregistre-le plutôt dans <b>Mes recettes</b>.</span>`}
 
     <div class="actions"><button class="btn primary" data-act="saveMeal">Enregistrer</button><button class="btn soft" data-act="close">Annuler</button></div>
-    <button class="btn upri u-shop" data-act="saveMealShop">${icon('shopping-cart',18)}Enregistrer et ajouter aux courses</button>
+    ${rec ? '' : `<button class="btn upri u-shop" data-act="saveMealShop">${icon('shopping-cart',18)}Enregistrer et ajouter aux courses</button>`}
     ${d.id ? `<button class="btn danger ${S.armed==='meal'?'armed':''}" data-act="delMeal">${S.armed==='meal'?'Confirmer la suppression':'Supprimer ce repas'}</button>` : ''}`;
 };
 function mealDraft(m, date, slot){
@@ -66,7 +50,8 @@ function saveMealDraft(){
   if (!d.slots.length) { toast('Choisis matin, midi ou soir.'); return null; }
   const occ = []; d.days.slice().sort().forEach(ds => d.slots.slice().sort((a,b) => slotRank(a) - slotRank(b)).forEach(s => occ.push({date: ds, slot: s})));
   const steps = String(d.stepsText||'').split('\n').map(x => x.replace(/^\s*(\d+[.)]|[-•*])\s*/, '').trim()).filter(Boolean).slice(0, 40);
-  const m = {id: d.id || uid('r'), name, date: occ[0].date, slot: occ[0].slot, occ, ingredients: parseIngredients(d.ingrText), steps, url: d.url || '', image: d.image || '', time: d.time || 0, servings: d.servings || '', by:S.me||null};
+  const rec = d.recipeId ? S.recipes.get(d.recipeId) : null;
+  const m = {id: d.id || uid('r'), name: rec ? rec.name : name, recipeId: rec ? rec.id : null, date: occ[0].date, slot: occ[0].slot, occ, ingredients: rec ? [] : parseIngredients(d.ingrText), steps: rec ? [] : steps, url: d.url || '', image: d.image || '', time: d.time || 0, servings: d.servings || '', by:S.me||null};
   put('meals', m); if (!d.id) { if (typeof thinkCredit === 'function') thinkCredit('meals'); } return m;
 }
 Object.assign(H, {
@@ -79,7 +64,6 @@ Object.assign(H, {
   saveMeal: () => { if (saveMealDraft()) { closeSheet(); render(); toast('Repas enregistré'); } },
   saveMealShop: () => { const m = saveMealDraft(); if (!m) return; let n = 0; m.ingredients.forEach(g => { if (addIngredient(g)) n++; }); closeSheet(); render(); toast(n ? `Repas enregistré, ${n} ingrédients ajoutés aux courses` : 'Repas enregistré'); },
   delMeal: () => { if (S.armed !== 'meal') { S.armed = 'meal'; renderSheet(); return; } del('meals', S.draft.id); closeSheet(); render(); },
-  goRecipes: () => { S.tab = 'courses'; S.sub.courses = 'recettes'; S.sub.plus = null; render(); window.scrollTo(0,0); },
 });
 Object.assign(CH, {
   meName: el => { S.draft.name = el.value; }, meIngr: el => { S.draft.ingrText = el.value; }, meSteps: el => { S.draft.stepsText = el.value; },

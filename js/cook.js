@@ -83,6 +83,7 @@ document.addEventListener('keydown', e => { if (!CK) return; if (e.key === 'Esca
 Object.assign(H, {
   cook: el => {
     const m = S.meals.get(el.dataset.id); if (!m) return;
+    const rec = typeof mealRecipe === 'function' && mealRecipe(m); if (rec && (rec.steps||[]).length) { cookRecipe(rec); return; }
     if ((m.steps||[]).length) { startCook(m); return; }
     H.editMeal({dataset:{id: m.id}}); toast('Écris les étapes de la recette (une par ligne), puis touche « Cuisiner ce plat ».');
     setTimeout(() => { const t = document.getElementById('me-steps'); if (t) { t.scrollIntoView({block:'center'}); t.focus(); } }, 250);

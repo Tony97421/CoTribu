@@ -6,7 +6,7 @@ const GUIDE = [
   {ic:'circle-check', u:'u-home', t:'Maison', s:'Les tâches reviennent toutes seules (chaque mardi, une semaine sur deux…), et on peut faire « chacun son tour ». Un petit « Merci » à celui qui l’a fait, et un mode vacances pour tout mettre en pause.'},
   {ic:'shopping-cart', u:'u-shop', t:'Courses', s:'Écris ou dis au micro « lait, pain et œufs » : tout se range dans son rayon. Choisis ton magasin pour avoir les rayons dans le bon ordre, et partage une liste ou une recette depuis WhatsApp ou Marmiton.'},
   {ic:'calendar-days', u:'u-plan', t:'Planning', s:'Rendez-vous, activités, anniversaires avec un rappel une heure avant. Ajoute l’emploi du temps de chacun (travail, école, cantine) : CoTribu montre qui est disponible et ne dérange pas pendant le travail.'},
-  {ic:'utensils', u:'u-shop', t:'Repas', s:'Le menu de la semaine, même pour un plat qui dure plusieurs repas. Les ingrédients passent dans la liste de courses en un geste.'},
+  {ic:'utensils', u:'u-shop', t:'Repas & recettes', s:'Ton carnet de recettes familial, puis le menu de la semaine. D’une recette, en un geste : « Ajouter au menu » et « Ajouter les ingrédients aux courses », rangés par rayon.'},
   {ic:'users', u:'u-lav', t:'Toute la tribu', s:'Dans Plus : les proches (grand-mère, nounou) à qui demander une garde, les points et récompenses des enfants, la charge mentale et les souvenirs.'},
   {ic:'sparkles', u:'u-warm', t:'Pour bien démarrer', s:'Sur l’accueil, la carte « Premiers pas » te guide : qui es-tu, ta photo, ton emploi du temps, inviter la famille, activer les rappels. Une idée, un souci ? Écris-nous depuis Plus.'},
 ];

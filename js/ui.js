@@ -90,11 +90,12 @@ window.addEventListener('popstate', () => {
   if (typeof slidesOpen === 'function' && slidesOpen()) { closeSlides(true); return; }
   if (typeof cookOpen === 'function' && cookOpen()) { closeCook(true); return; }
   if (S.sheet) { closeSheet(true); return; }
+  if (S.recipeOpen) { S.recipeOpen = null; render(); return; }
   if (S.roomOpen) { S.roomOpen = null; render(); return; }
   if (S.aisleOpen) { S.aisleOpen = null; render(); return; }
   if (S.tab === 'plus' && S.sub.plus) { S.sub.plus = S.sub.plus === 'album' ? 'souvenirs' : null; render(); return; }
 });
-function back(){ if (history.state && history.state.sub) history.back(); else { S.roomOpen = null; S.aisleOpen = null; S.sub.plus = null; render(); } }
+function back(){ if (history.state && history.state.sub) history.back(); else if (S.recipeOpen) { S.recipeOpen = null; render(); } else { S.roomOpen = null; S.aisleOpen = null; S.sub.plus = null; render(); } }
 const backBtn = label => `<button class="back" data-act="back">${icon('chevron-left',20)}${esc(label)}</button>`;
 
 /* ---------- actions communes ---------- */

@@ -29,10 +29,9 @@ function addBar(){
 VIEWS.courses = () => {
   const s = S.sub.courses;
   let h = ptitle('Courses', 'Une liste partagée, toujours à jour.');
-  h += seg('csub', s, [['liste','Ma liste'],['rayons','Par rayons'],['recettes','Recettes'],['historique','Historique']], 'u-shop');
+  h += seg('csub', s === 'recettes' ? 'liste' : s, [['liste','Ma liste'],['rayons','Par rayons'],['historique','Historique']], 'u-shop');
   if ((s === 'liste' || s === 'rayons') && !S.aisleOpen) h += storeBar();
   if (s === 'rayons') h += S.aisleOpen ? coursesAisle(S.aisleOpen) : coursesAisles();
-  else if (s === 'recettes') h += coursesRecipes();
   else if (s === 'historique') h += coursesHistory();
   else h += coursesList();
   return h;
@@ -41,7 +40,8 @@ VIEWS.courses = () => {
 function coursesList(){
   const items = activeItems();
   let h = addBar();
-  if (!items.length) return h + `<div class="empty"><h3>La liste est vide</h3><span class="muted">Ajoute un article : il est rangé tout seul dans son rayon, et toute la famille le voit.</span></div>`;
+  const fromRec = `<button class="btn upri block u-shop" data-act="fromRecipeOpen">${icon('chef-hat',20)}Ajouter depuis une recette</button>`;
+  if (!items.length) return h + `<div class="empty"><h3>La liste est vide</h3><span class="muted">Ajoute un article : il est rangé tout seul dans son rayon, et toute la famille le voit.</span></div>` + fromRec;
   for (const a of aislesSorted()){
     const list = items.filter(i => (i.aisle||'autre') === a.id).sort((x,y) => (x.done - y.done) || itemKey(x) - itemKey(y));
     if (!list.length) continue;
@@ -51,6 +51,7 @@ function coursesList(){
       ${closed ? '' : list.map(i => itemRow(i, {noIcon:true, grip:true})).join('')}</section>`;
   }
   const bought = items.filter(i => i.done).length;
+  h += fromRec;
   if (bought) h += `<button class="btn soft block" data-act="clearBought">${icon('check',18)}Ranger les ${bought} articles achetés</button>`;
   h += `<span class="info">Reste appuyé sur un article, puis fais-le glisser pour changer son ordre ou son rayon. <button class="linkbtn" data-act="aisleOrderOpen">Changer l’ordre des rayons</button></span>`;
   return h;
@@ -78,27 +79,6 @@ function weekMeals(){
     .sort((a,b) => a.date.localeCompare(b.date) || slotRank(a.slot) - slotRank(b.slot));
 }
 function dayTag(ds){ const t = localToday(); return ds === t ? 'Aujourd’hui' : ds === addDays(t,1) ? 'Demain' : cap(fmt(ds,{weekday:'long'})); }
-function coursesRecipes(){
-  const meals = weekMeals();
-  if (!meals.length) return `<div class="empty"><h3>Aucun repas prévu cette semaine</h3><span class="muted">Planifie tes repas avec leurs ingrédients : ce qui manque s’ajoute à la liste en un geste.</span><button class="btn upri u-shop" data-act="goRepas">${icon('utensils',18)}Planifier les repas</button></div>`;
-  const missing = [];
-  meals.forEach(m => (m.ingredients||[]).forEach(g => { if (!missing.some(x => norm(x.name)===norm(g.name))) missing.push({...g, aisle: g.aisle || aisleFor(g.name), meal:m}); }));
-  const need = missing.filter(g => !onList(g.name));
-  let h = `<div class="row"><h3 style="flex:1">À partir de vos repas de la semaine</h3><button class="btn ghost sm" data-act="addAllIngr">Tout ajouter</button></div>
-    <div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:4px">${meals.map(m => `<div class="ucard u-shop mealcard" style="min-width:160px;flex:none"><div class="row" style="gap:4px"><span class="kicker" style="flex:1">${esc(dayTag(m.date))} · ${esc(m.slot)}${mealOcc(m).length > 1 ? ` +${mealOcc(m).length - 1}` : ''}</span><button class="iconbtn sm" data-act="mealDelQuick" data-id="${m.id}" aria-label="Supprimer ${esc(m.name)}">${icon('trash-2',16)}</button></div>
-      <button class="mealname" data-act="editMeal" data-id="${m.id}"><strong>${esc(m.name)}</strong><span class="muted small">${(m.ingredients||[]).length} ingrédients · modifier</span></button>
-      <div class="row" style="gap:6px"><button class="btn upri sm u-shop" data-act="addMealIngr" data-id="${m.id}">${icon('plus',16)}Ajouter</button><button class="btn soft sm" data-act="cook" data-id="${m.id}" aria-label="Cuisiner ${esc(m.name)}">${icon('chef-hat',16)}Cuisiner</button></div></div>`).join('')}</div>`;
-  h += `<h3>Ingrédients manquants (${need.length})</h3>`;
-  for (const a of aislesSorted()){
-    const list = missing.filter(g => g.aisle === a.id); if (!list.length) continue;
-    h += `<section class="group u-${a.tone}"><div class="ghead" style="background:var(--u-soft)"><span class="bubble sm">${icon(a.icon,16)}</span><h3>${esc(a.name)}</h3></div>
-      ${list.map(g => { const has = onList(g.name); return `<div class="task ${has?'done':''}"><span class="aisle-ic">${icon(a.icon,18)}</span><div class="body"><span class="name">${esc(g.name)}</span><span class="meta">${esc(g.qty||'')}${g.qty?' · ':''}${esc(g.meal.name)}</span></div>
-        <button class="del" data-act="ingrDel" data-meal="${g.meal.id}" data-name="${esc(g.name)}" aria-label="Retirer ${esc(g.name)} de la recette">${icon('x',18)}</button>
-        <button class="cart ${has?'on':''}" data-act="addIngr" data-name="${esc(g.name)}" data-qty="${esc(g.qty||'')}" data-aisle="${g.aisle}" aria-label="${has?'Déjà dans la liste':'Ajouter à la liste'}">${icon(has?'check':'shopping-cart',18)}</button></div>`; }).join('')}</section>`;
-  }
-  if (need.length) h += `<button class="btn deep block" data-act="addAllIngr">${icon('shopping-cart',20)}Tout ajouter à la liste (${need.length})</button>`;
-  return h;
-}
 function coursesHistory(){
   const hist = [...S.items.values()].filter(i => i.archived).sort((a,b) => String(b.doneAt||'').localeCompare(String(a.doneAt||'')));
   if (!hist.length) return `<div class="empty"><h3>Pas encore d’historique</h3><span class="muted">Les articles achetés arrivent ici : un geste suffit pour les racheter.</span></div>`;
@@ -183,7 +163,6 @@ Object.assign(H, {
   },
   addAllIngr: () => { let n = 0; weekMeals().forEach(m => (m.ingredients||[]).forEach(g => { if (addIngredient(g)) n++; })); render(); toast(n ? `${n} ingrédients ajoutés à la liste` : 'Tout est déjà dans la liste'); },
   rebuy: el => { const i = S.items.get(el.dataset.id); if (!i || onList(i.name)) return; addIngredient({name:i.name, qty:i.qty, aisle:i.aisle}); render(); toast(i.name + ' remis dans la liste'); },
-  goRepas: () => { S.tab = 'plus'; S.sub.plus = 'repas'; render(); window.scrollTo(0,0); },
 });
 Object.assign(CH, {
   cNew: el => { S.cNew = el.value; },

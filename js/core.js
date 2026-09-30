@@ -145,10 +145,10 @@ function onDay(t, ds, today){
 }
 
 /* ---------- state ---------- */
-const COLS = ['members','rooms','tasks','items','events','meals','memories','proches','requests','albums','rewards'];
+const COLS = ['members','rooms','tasks','items','events','meals','memories','proches','requests','albums','rewards','recipes'];
 const S = {
   members:new Map(), rooms:new Map(), tasks:new Map(), items:new Map(), events:new Map(), meals:new Map(), memories:new Map(),
-  proches:new Map(), requests:new Map(), albums:new Map(), rewards:new Map(),
+  proches:new Map(), requests:new Map(), albums:new Map(), rewards:new Map(), recipes:new Map(),
   meta:{name:'Notre maison'},
   mode:'loading', loaded:false, tab:'today', filter:'all', me:null, draft:null, sheet:null, armed:null,
   sub:{maison:'jour', courses:'liste', planning:'semaine', plus:null},
@@ -260,9 +260,9 @@ const CATS = {
 
 const AISLES = [
   {id:'fruits',   name:'Fruits & légumes',  icon:'apple',       tone:'shop',  kw:'pomme poire banane tomate salade carotte courgette oignon ail échalote pomme de terre patate avocat citron orange clémentine kiwi fraise raisin melon pastèque poireau brocoli chou épinard concombre poivron aubergine champignon herbe persil basilic menthe fruit légume radis haricot vert endive betterave mangue ananas pêche abricot cerise'},
-  {id:'frais',    name:'Produits frais',    icon:'milk',        tone:'plan',  kw:'lait yaourt yogourt fromage beurre crème oeuf œuf mozzarella emmental comté parmesan chèvre feta skyr compote dessert jambon lardon saucisson chorizo pâte feuilletée pâte brisée pâte à pizza tofu houmous gruyère gruyere camembert brie raclette reblochon roquefort cancoillotte flan crème-dessert lasagnes quiche taboulé'},
+  {id:'frais',    name:'Produits frais',    icon:'milk',        tone:'plan',  kw:'lait yaourt yogourt fromage beurre crème oeuf œuf mozzarella emmental comté parmesan chèvre feta skyr compote dessert jambon lardon saucisson chorizo pâte feuilletée pâte brisée pâte à pizza tofu houmous gruyère gruyere camembert brie raclette reblochon roquefort cancoillotte flan crème-dessert quiche taboulé bechamel béchamel'},
   {id:'viandes',  name:'Viandes & poissons',icon:'drumstick',   tone:'mem',   kw:'poulet boeuf bœuf steak haché porc veau agneau dinde saucisse côte escalope rôti viande poisson saumon cabillaud thon crevette moule colin merlu filet merguez cordon chipolata poisson-pané surimi'},
-  {id:'epicerie', name:'Épicerie',          icon:'wheat',       tone:'shop',  kw:'pâtes pates riz farine sucre sel poivre huile vinaigre moutarde ketchup mayonnaise sauce conserve lentille pois chiche semoule quinoa céréale cereale biscuit gâteau chocolat confiture miel biscotte café thé tisane épice bouillon chips gâteaux apéro olive maïs sucette bonbon compote pâte à tartiner nutella levure apéritif aperitif cacahuète cacahuete pistache cornichon pesto tortilla wrap muesli granola chewing-gum dosette capsule filtre-café soupe purée'},
+  {id:'epicerie', name:'Épicerie',          icon:'wheat',       tone:'shop',  kw:'pâtes pates riz farine sucre sel poivre huile vinaigre moutarde ketchup mayonnaise sauce conserve lentille pois chiche semoule quinoa céréale cereale biscuit gâteau chocolat confiture miel biscotte café thé tisane épice bouillon chips gâteaux apéro olive maïs sucette bonbon compote pâte à tartiner nutella levure apéritif aperitif cacahuète cacahuete pistache cornichon pesto tortilla wrap muesli granola chewing-gum dosette capsule filtre-café soupe purée tomates-concassees tomate-concassee concassee coulis coulis-de-tomate passata sauce-tomate tomates-pelees pulpe-de-tomate lasagne lasagnes'},
   {id:'boulangerie',name:'Boulangerie',     icon:'croissant',   tone:'shop',  kw:'pain baguette croissant brioche viennoiserie pain-de-mie'},
   {id:'surgeles', name:'Surgelés',          icon:'snowflake',   tone:'plan',  kw:'surgelé surgele glace frites poêlée petits pois surgelés pizza surgelée nuggets'},
   {id:'boissons', name:'Boissons',          icon:'cup-soda',    tone:'plan',  kw:'eau jus soda coca limonade sirop vin bière biere boisson cidre champagne rosé whisky rhum lait-d-amande lait-d-avoine lait-de-soja'},

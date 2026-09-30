@@ -31,7 +31,10 @@ function onWriteError(err){
   else toast("Modification non enregistrée. Réessaie dans un instant.");
   loadAll();
 }
-const row = (col, obj) => ({household_id:S.hh.id, col, id:obj.id, data:obj, updated_at:new Date().toISOString()});
+// le carnet de recettes est rangé dans la collection « meals » de la base (ids « rc-… »), sans changement de schéma
+const dbCol = col => col === 'recipes' ? 'meals' : col;
+const appCol = (col, id) => col === 'meals' && String(id).startsWith('rc-') ? 'recipes' : col;
+const row = (col, obj) => ({household_id:S.hh.id, col:dbCol(col), id:obj.id, data:obj, updated_at:new Date().toISOString()});
 function put(col, obj){
   S[col].set(obj.id, obj);
   return enqueue(col+'/'+obj.id, () => sb.from('docs').upsert(row(col,obj)));
@@ -42,7 +45,7 @@ function putMany(col, list){
 }
 function del(col, id){
   S[col].delete(id);
-  enqueue(col+'/'+id, () => sb.from('docs').delete().match({household_id:S.hh.id, col, id}));
+  enqueue(col+'/'+id, () => sb.from('docs').delete().match({household_id:S.hh.id, col:dbCol(col), id}));
 }
 function putMeta(meta){
   S.meta = meta;
@@ -54,7 +57,7 @@ async function loadAll(){
   const {data, error} = await sb.from('docs').select('col,id,data').eq('household_id', S.hh.id);
   if (error) { console.warn(error); return; }
   const next = {}; COLS.forEach(c => next[c] = new Map());
-  data.forEach(r => { if (next[r.col]) next[r.col].set(r.id, {...r.data, id:r.id}); });
+  data.forEach(r => { const c = appCol(r.col, r.id); if (next[c]) next[c].set(r.id, {...r.data, id:r.id}); });
   Object.assign(S, next);
   const h = await sb.from('households').select(HH_COLS).eq('id', S.hh.id).maybeSingle();
   if (h.data) { S.hh = h.data; S.meta = {name:h.data.name}; }
@@ -65,8 +68,8 @@ function subscribe(){
   if (channel) sb.removeChannel(channel);
   channel = sb.channel('docs-'+S.hh.id)
     .on('postgres_changes', {event:'*', schema:'public', table:'docs', filter:'household_id=eq.'+S.hh.id}, p => {
-      if (p.eventType === 'DELETE') { const o = p.old || {}; if (o.household_id && o.household_id !== S.hh.id) return; if (S[o.col]) S[o.col].delete(o.id); }
-      else { const r = p.new; if (S[r.col]) S[r.col].set(r.id, {...r.data, id:r.id}); }
+      if (p.eventType === 'DELETE') { const o = p.old || {}; if (o.household_id && o.household_id !== S.hh.id) return; const c = appCol(o.col, o.id); if (S[c]) S[c].delete(o.id); }
+      else { const r = p.new; const c = appCol(r.col, r.id); if (S[c]) S[c].set(r.id, {...r.data, id:r.id}); }
       render();
     })
     .subscribe(status => { S.live = status === 'SUBSCRIBED'; renderHeaderStatus(); });
