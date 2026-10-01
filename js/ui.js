@@ -48,6 +48,7 @@ function seg(name, cur, options, uni){
 /* ---------- rendu ---------- */
 function render(){
   if (S.dragging) { S.dragPending = true; return; } // pas de redessin pendant un glisser-déposer
+  navTrack();
   const tabs = document.querySelector('.tabs');
   tabs.hidden = S.mode !== 'app' || S.role === 'proche';
   tabs.querySelectorAll('button').forEach(b => b.setAttribute('aria-current', b.dataset.v === S.tab ? 'page' : 'false'));
@@ -70,13 +71,10 @@ function afterRender(){ AFTER.forEach(fn => { try { fn(); } catch(e){ console.wa
 /* ---------- feuilles (panneaux du bas) ---------- */
 function openSheet(kind){
   S.sheet = kind; S.armed = null; renderSheet(); document.getElementById('sheet').hidden = false; document.body.classList.add('sheet-open');
-  if (!(history.state && history.state.sheet)) history.pushState({sheet:1}, '');
 }
 function closeSheet(fromPop){
   S.sheet = null; S.draft = null; S.armed = null; document.getElementById('sheet').hidden = true; document.body.classList.remove('sheet-open');
-  if (!fromPop && history.state && history.state.sheet) { ignorePop = true; history.back(); }
 }
-let ignorePop = false;
 function renderSheet(){
   const el = document.getElementById('sheetBody');
   const a = document.activeElement, focused = a && a.id, val = a && a.value, sel = a && a.selectionStart;
@@ -84,18 +82,59 @@ function renderSheet(){
   if (focused) { const f = document.getElementById(focused); if (f && el.contains(f)) { if ((f.tagName==='INPUT' && f.type!=='file')||f.tagName==='TEXTAREA') f.value = val; f.focus(); try { f.setSelectionRange(sel, sel); } catch(e){} } }
   afterRender();
 }
-function goSub(fn){ fn(); if (!(history.state && history.state.sub)) history.pushState({sub:1}, ''); render(); window.scrollTo(0,0); }
+function goSub(fn){ fn(); render(); window.scrollTo(0,0); }
+
+/* ---------- bouton Retour (Android) ----------
+   Une seule entrée « garde » dans l'historique : chaque Retour ferme le niveau du dessus
+   (diaporama, mode cuisine, panneau, recette, pièce, rayon), puis revient à la page précédente,
+   puis à l'accueil. À l'accueil, un premier Retour prévient, le second quitte l'appli. */
+const NAV = {stack: [], loc: null, armed: false, silent: false};
+const navRoot = () => S.role === 'proche' ? 'proche' : 'today';
+const navKey = l => l.tab + '|' + (l.plus || '');
+function navTrack(){
+  if (S.mode !== 'app') { NAV.stack = []; NAV.loc = null; return; }
+  const cur = {tab: S.tab, plus: S.tab === 'plus' ? (S.sub.plus || null) : null};
+  if (NAV.loc && navKey(NAV.loc) !== navKey(cur) && !NAV.silent) {
+    NAV.stack = NAV.stack.filter(l => navKey(l) !== navKey(NAV.loc)); NAV.stack.push(NAV.loc);
+    if (NAV.stack.length > 20) NAV.stack.shift();
+  }
+  NAV.silent = false; NAV.loc = cur;
+}
+function navArm(){ if (NAV.armed) return; try { history.pushState({cotribu: 'garde'}, ''); NAV.armed = true; } catch(_){} }
+document.addEventListener('pointerdown', navArm, true);
+document.addEventListener('keydown', navArm, true);
+// ferme un niveau ; renvoie false s'il n'y a plus rien à fermer
+function navBack(){
+  if (typeof slidesOpen === 'function' && slidesOpen()) { closeSlides(true); return true; }
+  if (typeof cookOpen === 'function' && cookOpen()) { closeCook(true); return true; }
+  if (S.sheet) { closeSheet(true); return true; }
+  if (S.mode !== 'app') return false;
+  if (S.recipeOpen) { S.recipeOpen = null; render(); return true; }
+  if (S.roomOpen) { S.roomOpen = null; render(); return true; }
+  if (S.aisleOpen) { S.aisleOpen = null; render(); return true; }
+  const curKey = navKey({tab: S.tab, plus: S.tab === 'plus' ? S.sub.plus : null});
+  while (NAV.stack.length) {
+    const l = NAV.stack.pop(); if (navKey(l) === curKey) continue;
+    NAV.silent = true; S.tab = l.tab; if (l.tab === 'plus') S.sub.plus = l.plus; else S.sub.plus = null;
+    S.armed = null; render(); window.scrollTo(0,0); return true;
+  }
+  if (S.tab === 'plus' && S.sub.plus) { NAV.silent = true; S.sub.plus = S.sub.plus === 'album' ? 'souvenirs' : null; render(); window.scrollTo(0,0); return true; }
+  if (S.tab !== navRoot()) { NAV.silent = true; S.tab = navRoot(); S.sub.plus = null; render(); window.scrollTo(0,0); return true; }
+  return false;
+}
 window.addEventListener('popstate', () => {
-  if (ignorePop) { ignorePop = false; return; }
-  if (typeof slidesOpen === 'function' && slidesOpen()) { closeSlides(true); return; }
-  if (typeof cookOpen === 'function' && cookOpen()) { closeCook(true); return; }
-  if (S.sheet) { closeSheet(true); return; }
-  if (S.recipeOpen) { S.recipeOpen = null; render(); return; }
-  if (S.roomOpen) { S.roomOpen = null; render(); return; }
-  if (S.aisleOpen) { S.aisleOpen = null; render(); return; }
-  if (S.tab === 'plus' && S.sub.plus) { S.sub.plus = S.sub.plus === 'album' ? 'souvenirs' : null; render(); return; }
+  NAV.armed = false;
+  if (navBack()) { navArm(); NAV.exitWarned = false; return; }
+  if (S.mode === 'app' && !NAV.exitWarned) { NAV.exitWarned = true; toast('Appuie encore sur Retour pour quitter CoTribu'); }
 });
-function back(){ if (history.state && history.state.sub) history.back(); else if (S.recipeOpen) { S.recipeOpen = null; render(); } else { S.roomOpen = null; S.aisleOpen = null; S.sub.plus = null; render(); } }
+// bouton « ‹ » dans l'appli : remonte au niveau parent (Foyer → Plus), sans toucher à l'historique
+function back(){
+  if (S.recipeOpen) S.recipeOpen = null;
+  else if (S.roomOpen) S.roomOpen = null;
+  else if (S.aisleOpen) S.aisleOpen = null;
+  else if (S.tab === 'plus' && S.sub.plus) { NAV.silent = true; S.sub.plus = S.sub.plus === 'album' ? 'souvenirs' : null; }
+  render(); window.scrollTo(0,0);
+}
 const backBtn = label => `<button class="back" data-act="back">${icon('chevron-left',20)}${esc(label)}</button>`;
 
 /* ---------- actions communes ---------- */

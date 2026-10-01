@@ -94,7 +94,6 @@ async function startSlides(items){
     <div class="sl-load">Chargement des photos…</div>`;
   document.body.appendChild(el);
   SL = {el, items, i:0, playing:true, timer:null, front:0};
-  history.pushState({slides:1}, '');
   el.addEventListener('click', ev => {
     const b = ev.target.closest('[data-sl]'); if (b) { slideCmd(b.dataset.sl); return; }
     const x = ev.clientX / window.innerWidth; slideCmd(x < .3 ? 'prev' : x > .7 ? 'next' : 'play');
@@ -136,7 +135,6 @@ function closeSlides(fromPop){
   clearTimeout(SL.timer); SL.el.remove();
   try { if (SL.lock) SL.lock.release(); } catch(e){}
   SL = null;
-  if (!fromPop && history.state && history.state.slides) { ignorePop = true; history.back(); }
 }
 document.addEventListener('keydown', e => {
   if (!SL) return;

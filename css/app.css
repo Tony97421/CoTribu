@@ -610,3 +610,10 @@ body.sheet-open{overflow:hidden}
 .importbox .row .btn{flex:none}
 .task .when:empty{display:none}
 .card a.small,.muted a{color:var(--accent-deep,#3F6150);font-weight:600}
+/* accueil personnalisable */
+.homeedit{align-self:center;margin-top:4px}
+.homelist{display:flex;flex-direction:column;gap:8px}
+.homerow{display:flex;align-items:center;gap:10px;background:var(--surface2);border-radius:16px;padding:6px 8px 6px 4px;min-height:52px}
+.homerow.off{opacity:.5}
+.homerow.off .iconbtn{color:var(--faint)}
+.homerow.dragging{box-shadow:0 12px 30px rgba(0,0,0,.18);background:var(--surface,#fff);position:relative;z-index:5}

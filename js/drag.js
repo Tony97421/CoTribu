@@ -109,6 +109,9 @@ DROP.items = boxes => {
   if (moved) toast(`${moved.name} rangé dans « ${aisleOf(moved.aisle).name} ». CoTribu s’en souviendra.`);
 };
 
+/* ---------- blocs de l'accueil ---------- */
+DROP.home = (boxes, row, box) => { const p = homePrefs(); p.order = [...(box || boxes[0]).querySelectorAll('[data-sid]')].map(r => r.dataset.sid); saveHomePrefs(p); render(); };
+
 /* ---------- magasins et ordre des rayons ---------- */
 function saveStores(list){ const o = {list, at: new Date().toISOString()}; const ms = [...S.members.values()].map(m => ({...clone(m), stores: o})); if (ms.length) putMany('members', ms); }
 function pickStore(id){ if (S.hh) LS.set('cotribu-store-' + S.hh.id, id || ''); }

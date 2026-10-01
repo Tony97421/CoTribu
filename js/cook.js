@@ -10,7 +10,6 @@ function startCook(r){
   el.className = 'cook'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Mode cuisine');
   document.body.appendChild(el);
   CK = {el, r, i: -1, got: new Set(), timer: null};
-  history.pushState({cook: 1}, '');
   try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then(l => { if (CK) CK.lock = l; }).catch(() => {}); } catch(_){}
   el.addEventListener('click', ev => { const b = ev.target.closest('[data-ck]'); if (b) cookCmd(b.dataset.ck, b.dataset.v); });
   cookRender();
@@ -77,7 +76,6 @@ function closeCook(fromPop){
   try { speechSynthesis.cancel(); } catch(_){}
   try { if (CK.lock) CK.lock.release(); } catch(_){}
   CK.el.remove(); CK = null;
-  if (!fromPop && history.state && history.state.cook) { ignorePop = true; history.back(); }
 }
 document.addEventListener('keydown', e => { if (!CK) return; if (e.key === 'Escape') closeCook(); else if (e.key === 'ArrowRight') cookCmd('next'); else if (e.key === 'ArrowLeft') cookCmd('prev'); });
 Object.assign(H, {

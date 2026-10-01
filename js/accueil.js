@@ -15,56 +15,110 @@ VIEWS.today = () => {
   }
   h += whoAmICard() + firstStepsCard() + (typeof newsCard === 'function' ? newsCard() : '') + installCard(true);
   h += (typeof thanksCard === 'function' ? thanksCard() : '') + (typeof rateCard === 'function' ? rateCard() : '') + pauseCard('today') + throwbackHero() + countdownCard();
-  h += meteoCard();
+  let contextual = '';
   const pk = prevMonthKey();
   if (+today.slice(8) <= 5 && LS.get('cotribu-dismiss-bilan') !== pk && sorted(S.members).some(m => !m.kid && thinkTotal(m, pk) > 0))
-    h += `<div class="ucard u-lav"><div class="row"><span class="bubble sm">${icon('brain',16)}</span><h3 style="flex:1">Le bilan de ${esc(MON[+pk.slice(5)-1])}</h3><button class="x" style="border:0;background:none;color:var(--muted)" data-act="dismissBilan" data-v="${pk}" aria-label="Masquer">${icon('x',18)}</button></div>
+    contextual += `<div class="ucard u-lav"><div class="row"><span class="bubble sm">${icon('brain',16)}</span><h3 style="flex:1">Le bilan de ${esc(MON[+pk.slice(5)-1])}</h3><button class="x" style="border:0;background:none;color:var(--muted)" data-act="dismissBilan" data-v="${pk}" aria-label="Masquer">${icon('x',18)}</button></div>
       <span class="small">${esc(chargeInsight(pk))}</span><button class="btn upri sm" data-act="goCharge" data-v="${pk}">Voir qui pense à quoi</button></div>`;
   const reqs = openRequests().slice(0,2);
-  if (reqs.length) h += `<div class="ucard u-lav"><button class="chead" data-act="plusGo" data-v="proches"><span class="bubble sm">${icon('hand-heart',16)}</span><h3>Demandes aux proches</h3><span class="spacer"></span><span class="go">${icon('chevron-right',18)}</span></button>${reqs.map(r => `<div class="row" style="justify-content:space-between;gap:8px"><span><strong>${esc(r.title)}</strong><br><span class="muted small">${esc(reqWhen(r))}</span></span>${reqStatus(r)}</div>`).join('')}</div>`;
+  if (reqs.length) contextual += `<div class="ucard u-lav"><button class="chead" data-act="plusGo" data-v="proches"><span class="bubble sm">${icon('hand-heart',16)}</span><h3>Demandes aux proches</h3><span class="spacer"></span><span class="go">${icon('chevron-right',18)}</span></button>${reqs.map(r => `<div class="row" style="justify-content:space-between;gap:8px"><span><strong>${esc(r.title)}</strong><br><span class="muted small">${esc(reqWhen(r))}</span></span>${reqStatus(r)}</div>`).join('')}</div>`;
 
-  // Tâches du jour
+  h += contextual + homeBlocks({today, tasks, list, late, done, total});
+  return h;
+};
+/* ---------- Accueil personnalisable : blocs dans l'ordre choisi par chacun ---------- */
+const HOME_BLOCKS = {
+  taches:   {label:'Tâches du jour', icon:'circle-check', size:'full', html: c => {
+    const {today, tasks, list, late, done, total} = c;
   const shown = [...late, ...list].slice(0, 6);
-  h += `<div class="card u-home"><button class="chead" data-act="tab" data-v="maison"><span class="bubble soft">${icon('circle-check',20)}</span><h3>Tâches du jour</h3><span class="go">${icon('chevron-right',18)}</span><span class="spacer"></span>
+  return `<div class="card u-home"><button class="chead" data-act="tab" data-v="maison"><span class="bubble soft">${icon('circle-check',20)}</span><h3>Tâches du jour</h3><span class="go">${icon('chevron-right',18)}</span><span class="spacer"></span>
       <span class="muted small num" style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">${done}/${total} terminées<span class="pbar" style="width:88px"><b style="width:${total?Math.round(done/total*100):0}%"></b></span></span></button>
     <div class="mini">${shown.map(x => taskRow(x, today, {noFreq:true})).join('') || '<span class="muted small">Rien de prévu aujourd’hui.</span>'}</div>
     ${tasks.length > shown.length ? `<button class="btn ghost sm" data-act="tab" data-v="maison">Voir les ${tasks.length} tâches</button>` : ''}
     <button class="addline" data-act="newTask">${icon('plus',20)}Ajouter une tâche</button></div>`;
 
-  // Points de la semaine
+  }},
+  meteo:    {label:'Météo de la tribu', icon:'cloud-sun', size:'full', html: () => meteoCard()},
+  points:   {label:'Points de la semaine', icon:'star', size:'full', html: () => {
   const champs = sorted(S.members).map(m => ({m, w: weekPts(m)})).filter(x => x.w > 0).sort((a,b) => b.w - a.w);
-  if (champs.length) h += `<div class="ucard u-shop"><button class="chead" data-act="plusGo" data-v="points"><span class="bubble sm">${icon('star',16)}</span><h3>Points de la semaine</h3><span class="spacer"></span><span class="go">${icon('chevron-right',18)}</span></button>
+  if (!champs.length) return '';
+  return `<div class="ucard u-shop"><button class="chead" data-act="plusGo" data-v="points"><span class="bubble sm">${icon('star',16)}</span><h3>Points de la semaine</h3><span class="spacer"></span><span class="go">${icon('chevron-right',18)}</span></button>
     <div class="chips">${champs.slice(0,4).map((x,i) => `<span class="chip" style="cursor:default">${avatar(x.m.id)}${esc(x.m.name)} <b class="num">${x.w}</b>${i===0?' ★':''}</span>`).join('')}</div></div>`;
 
-  // Planning + Repas
+  }},
+  planning: {label:'Planning', icon:'calendar', size:'half', html: c => { const today = c.today;
   const evs = eventsOn(today);
   const meals = mealsOn(today);
   const hr = new Date().getHours();
   const nowSlot = hr < 10 ? 'matin' : hr < 14 ? 'midi' : 'soir';
   const meal = meals.find(m => m.slot === nowSlot) || meals.find(m => slotRank(m.slot) > slotRank(nowSlot)) || meals[meals.length - 1];
-  h += `<div class="grid2">
-    <div class="ucard u-plan"><button class="chead" data-act="goPlanDay"><span class="bubble sm">${icon('calendar',16)}</span><h3>Planning</h3><span class="spacer"></span><span class="go">${icon('chevron-right',18)}</span></button>
+    return `<div class="ucard u-plan"><button class="chead" data-act="goPlanDay"><span class="bubble sm">${icon('calendar',16)}</span><h3>Planning</h3><span class="spacer"></span><span class="go">${icon('chevron-right',18)}</span></button>
       ${evs.length ? `<div class="dayline">${evs.slice(0,5).map(e => `<button class="it" style="border:0;background:none;padding:0;text-align:left;color:inherit" data-act="editEvent" data-id="${e.id}" data-day="${today}"><span class="hr"><i style="background:${catOf(e).c}"></i>${e.allDay||!e.start?'Jour':esc(hm(e.start))}</span><span>${esc(e.title)}</span></button>`).join('')}</div>` : '<span class="muted small">Aucun événement aujourd’hui.</span>'}
-      <button class="addline" data-act="newEvent">${icon('plus',18)}Événement</button></div>
-    <div class="ucard u-shop"><button class="chead" data-act="goRepas"><span class="bubble sm">${icon('utensils',16)}</span><h3>Repas</h3><span class="spacer"></span><span class="go">${icon('chevron-right',18)}</span></button>
+      <button class="addline" data-act="newEvent">${icon('plus',18)}Événement</button></div>`; }},
+  repas:    {label:'Repas', icon:'utensils', size:'half', html: c => { const today = c.today;
+  const evs = eventsOn(today);
+  const meals = mealsOn(today);
+  const hr = new Date().getHours();
+  const nowSlot = hr < 10 ? 'matin' : hr < 14 ? 'midi' : 'soir';
+  const meal = meals.find(m => m.slot === nowSlot) || meals.find(m => slotRank(m.slot) > slotRank(nowSlot)) || meals[meals.length - 1];
+    return `<div class="ucard u-shop"><button class="chead" data-act="goRepas"><span class="bubble sm">${icon('utensils',16)}</span><h3>Repas</h3><span class="spacer"></span><span class="go">${icon('chevron-right',18)}</span></button>
       ${meal ? `<button class="row" style="border:0;background:none;padding:0;text-align:left;color:inherit" data-act="editMeal" data-id="${meal.id}"><span class="mealpic" style="width:56px;height:56px;overflow:hidden">${mealRecipe(meal) ? recipeImg(mealRecipe(meal)) : icon('soup',26)}</span><span><span class="kicker">${({matin:'Ce matin', midi:'Ce midi', soir:'Ce soir'})[meal.slot] || 'Aujourd’hui'}</span><br><strong>${esc(meal.name)}</strong></span></button>` : '<span class="muted small">Rien de prévu pour ce soir.</span>'}
-      <button class="addline" data-act="newMeal" data-date="${today}" data-slot="${hr<14?'midi':'soir'}">${icon('plus',18)}Repas</button></div>
-  </div>`;
-
-  // Courses + Souvenirs
+      <button class="addline" data-act="newMeal" data-date="${today}" data-slot="${hr<14?'midi':'soir'}">${icon('plus',18)}Repas</button></div>`; }},
+  courses:  {label:'Courses', icon:'shopping-cart', size:'half', html: () => {
   const toBuy = activeItems().filter(i => !i.done);
   const tb = throwbackHero() ? null : throwback();
   const lastMem = tb || [...S.memories.values()].sort((a,b)=>b.date.localeCompare(a.date))[0];
-  h += `<div class="grid2">
-    <div class="ucard u-shop"><button class="chead" data-act="tab" data-v="courses"><span class="bubble sm">${icon('shopping-cart',16)}</span><h3>Courses</h3><span class="spacer"></span><span class="go">${icon('chevron-right',18)}</span></button>
+    return `<div class="ucard u-shop"><button class="chead" data-act="tab" data-v="courses"><span class="bubble sm">${icon('shopping-cart',16)}</span><h3>Courses</h3><span class="spacer"></span><span class="go">${icon('chevron-right',18)}</span></button>
       ${toBuy.length ? `<div class="mini">${toBuy.slice(0,3).map(i => `<div class="task"><button class="check" data-act="itemToggle" data-id="${i.id}" aria-label="Cocher ${esc(i.name)}">${checkIc()}</button><span class="body"><span class="name" style="font-weight:500">${esc(i.name)}</span></span></div>`).join('')}</div>${toBuy.length>3?`<span class="muted small">+ ${toBuy.length-3} autres</span>`:''}` : '<span class="muted small">La liste est vide.</span>'}
-      <button class="addline" data-act="goAddItem">${icon('plus',18)}Article</button></div>
-    <div class="ucard u-mem"><button class="chead" data-act="goSouvenirs"><span class="bubble sm">${icon('heart',16)}</span><h3>Souvenirs</h3><span class="spacer"></span><span class="go">${icon('chevron-right',18)}</span></button>
+      <button class="addline" data-act="goAddItem">${icon('plus',18)}Article</button></div>`; }},
+  souvenirs:{label:'Souvenirs', icon:'heart', size:'half', html: () => {
+  const toBuy = activeItems().filter(i => !i.done);
+  const tb = throwbackHero() ? null : throwback();
+  const lastMem = tb || [...S.memories.values()].sort((a,b)=>b.date.localeCompare(a.date))[0];
+    return `<div class="ucard u-mem"><button class="chead" data-act="goSouvenirs"><span class="bubble sm">${icon('heart',16)}</span><h3>Souvenirs</h3><span class="spacer"></span><span class="go">${icon('chevron-right',18)}</span></button>
       ${lastMem ? `<button style="border:0;background:none;padding:0;text-align:left;color:inherit;display:flex;flex-direction:column;gap:6px" data-act="openMemory" data-id="${lastMem.id}">${(lastMem.photos||[])[0]?`<span class="memthumb" style="width:100%;height:90px">${photoImg(lastMem.photos[0])}</span>`:''}<span class="kicker">${esc(tb ? agoLabel(tb) : 'Dernier souvenir')}</span><strong>${esc(lastMem.title)}</strong></button>` : '<span class="muted small">Les beaux moments de la famille, gardés ici.</span>'}
-      <button class="addline" data-act="newMemory">${icon('plus',18)}Souvenir</button></div>
-  </div>`;
-  return h;
+      <button class="addline" data-act="newMemory">${icon('plus',18)}Souvenir</button></div>`; }},
 };
+const HOME_DEFAULT = ['meteo', 'taches', 'points', 'planning', 'repas', 'courses', 'souvenirs'];
+function homePrefs(){
+  const m = S.me && S.members.get(S.me), saved = (m && m.home) || LS.getJSON('cotribu-home-' + (S.hh && S.hh.id)) || {};
+  const order = (saved.order || []).filter(k => HOME_BLOCKS[k]);
+  HOME_DEFAULT.forEach(k => { if (!order.includes(k)) order.splice(Math.min(HOME_DEFAULT.indexOf(k), order.length), 0, k); });
+  return {order, hidden: (saved.hidden || []).filter(k => HOME_BLOCKS[k])};
+}
+function saveHomePrefs(p){
+  const o = {order: p.order, hidden: p.hidden, at: new Date().toISOString()};
+  LS.setJSON('cotribu-home-' + S.hh.id, o);
+  const m = S.me && S.members.get(S.me); if (m) put('members', {...clone(m), home: o});
+}
+// deux demi-blocs côte à côte ; un demi-bloc seul prend toute la largeur
+function homeBlocks(c){
+  if (S.homeEdit) return homeEditor();
+  const p = homePrefs(), keys = p.order.filter(k => !p.hidden.includes(k));
+  const parts = keys.map(k => ({k, size: HOME_BLOCKS[k].size, h: HOME_BLOCKS[k].html(c)})).filter(x => x.h);
+  let h = '';
+  for (let i = 0; i < parts.length; i++) {
+    const x = parts[i], y = parts[i + 1];
+    if (x.size === 'half' && y && y.size === 'half') { h += `<div class="grid2">${x.h}${y.h}</div>`; i++; }
+    else h += x.h;
+  }
+  return h + `<button class="btn ghost sm homeedit" data-act="homeEdit">${icon('pencil',16)}Personnaliser l’accueil</button>`;
+}
+function homeEditor(){
+  const p = homePrefs();
+  return `<div class="card"><div class="row"><h3 style="flex:1">Personnaliser l’accueil</h3><button class="btn primary sm" data-act="homeDone">Terminé</button></div>
+    <span class="muted small">Fais glisser les blocs avec la poignée pour changer l’ordre. Touche l’œil pour masquer ou afficher un bloc. Ton accueil n’est pas modifié chez les autres.</span>
+    <div class="homelist" data-sort="home">${p.order.map(k => { const b = HOME_BLOCKS[k], off = p.hidden.includes(k);
+      return `<div class="homerow ${off ? 'off' : ''}" data-sid="${k}"><span class="grip" data-grip aria-label="Déplacer">${icon('grip-vertical',20)}</span><span class="bubble sm">${icon(b.icon,16)}</span><span style="flex:1;font-weight:600">${b.label}</span>
+        <button class="iconbtn" data-act="homeToggle" data-v="${k}" aria-pressed="${!off}" aria-label="${off ? 'Afficher' : 'Masquer'} ${b.label}">${icon(off ? 'eye-off' : 'eye', 20)}</button></div>`; }).join('')}</div>
+    <button class="btn ghost sm" data-act="homeReset">Revenir à l’ordre d’origine</button></div>`;
+}
+Object.assign(H, {
+  homeEdit: () => { S.homeEdit = true; render(); window.scrollTo(0, 0); setTimeout(() => { const e = document.querySelector('.homelist'); if (e) e.closest('.card').scrollIntoView({block:'start', behavior:'smooth'}); }, 50); },
+  homeDone: () => { S.homeEdit = false; render(); toast('Accueil enregistré'); },
+  homeToggle: el => { const p = homePrefs(), k = el.dataset.v; p.hidden = p.hidden.includes(k) ? p.hidden.filter(x => x !== k) : [...p.hidden, k]; saveHomePrefs(p); render(); },
+  homeReset: () => { saveHomePrefs({order: [...HOME_DEFAULT], hidden: []}); render(); toast('Ordre d’origine rétabli'); },
+});
 SHEETS.quick = () => `<h2>Ajouter</h2><div class="menu">
   ${[...(AI_ON ? [['aiOpen','sparkles','Écrire ou dicter (IA)','u-warm']] : []),['newTask','circle-check','Une tâche','u-home'],['newEvent','calendar','Un événement','u-plan'],['goAddItem','shopping-cart','Un article de courses','u-shop'],['newMealQ','utensils','Un repas','u-shop'],['newMemory','heart','Un souvenir','u-mem'],['newRequest','hand-heart','Une demande à un proche','u-lav']]
     .map(([a,ic,l,u]) => `<button class="lrow ${u}" data-act="${a}"><span class="bubble sm">${icon(ic,16)}</span><span class="body"><span class="t">${l}</span></span>${icon('chevron-right',18)}</button>`).join('')}</div>

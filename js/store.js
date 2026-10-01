@@ -166,7 +166,7 @@ async function joinAsProche(){
     const {data:h, error} = await sb.rpc('join_as_proche', {p_code:code, p_name:name});
     if (error) throw error;
     if (!h || !h.id) throw new Error('code_invalide');
-    history.replaceState(null, '', location.pathname);
+    history.replaceState(history.state, '', location.pathname);
     const u = (await sb.auth.getUser()).data.user;
     const {data:hu} = await sb.from('household_users').select('role, member_id').eq('household_id', h.id).eq('user_id', u.id).maybeSingle();
     S.busy = false;
@@ -186,7 +186,7 @@ async function joinHousehold(){
     const {data:h, error} = await sb.rpc('join_household', {p_code:code});
     if (error) throw error;
     if (!h || !h.id) throw new Error('code_invalide');
-    history.replaceState(null, '', location.pathname);
+    history.replaceState(history.state, '', location.pathname);
     S.busy = false; S.tab = 'today';
     const u = (await sb.auth.getUser()).data.user;
     const {data:hu} = await sb.from('household_users').select('role, member_id').eq('household_id', h.id).eq('user_id', u.id).maybeSingle();

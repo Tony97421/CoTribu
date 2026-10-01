@@ -157,6 +157,8 @@ const S = {
 const LS = {
   get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
   set(k,v){ try { localStorage.setItem(k,v); } catch(e){} },
+  getJSON(k){ try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch(e){ return null; } },
+  setJSON(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} },
 };
 S.filter = LS.get('cotribu-filter') || 'all';
 

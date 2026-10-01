@@ -193,7 +193,7 @@ function frOpen(name, ingredients){
 }
 
 /* ---------- actions ---------- */
-function openRecipe(id){ S.recipeOpen = id; S.rTab = 'ingr'; if (!(S.rHave && S.rHave.id === id)) S.rHave = {id, set: new Set()}; history.pushState({sub: 2}, ''); render(); window.scrollTo(0,0); }
+function openRecipe(id){ S.recipeOpen = id; S.rTab = 'ingr'; if (!(S.rHave && S.rHave.id === id)) S.rHave = {id, set: new Set()}; render(); window.scrollTo(0,0); }
 function goRepasTab(tab){ if (S.sheet) closeSheet(); S.tab = 'plus'; S.repasTab = tab; S.recipeOpen = null; goSub(() => { S.sub.plus = 'repas'; }); }
 function newMealFromRecipe(r, days, slots){
   const occ = []; days.slice().sort().forEach(ds => slots.slice().sort((a,b) => slotRank(a) - slotRank(b)).forEach(s => occ.push({date: ds, slot: s})));
@@ -305,7 +305,7 @@ Object.assign(H, {
     if (S.armed !== 'recipe') { S.armed = 'recipe'; renderSheet(); return; }
     const d = S.draft, r = S.recipes.get(d.id); if (!r) return;
     del('recipes', r.id); if (r.photo) removePhotos([r.photo]).catch(()=>{});
-    closeSheet(); if (S.recipeOpen === r.id) { S.recipeOpen = null; back(); } render(); toast('Recette supprimée');
+    closeSheet(); if (S.recipeOpen === r.id) S.recipeOpen = null; render(); toast('Recette supprimée');
   },
 });
 Object.assign(CH, {
