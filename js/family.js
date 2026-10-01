@@ -127,7 +127,7 @@ function meteoCard(){
     return mine.length ? `<div class="row" style="background:var(--late-soft);border-radius:14px;padding:10px 12px"><span style="flex:1" class="small"><b>${esc(m.name)}</b> est débordé${m.kid?'':'(e)'} aujourd’hui et a ${mine.length} tâche${mine.length>1?'s':''} à faire.</span><button class="btn deep sm" data-act="helpOpen" data-id="${m.id}">Aider</button></div>` : '';
   }).join('');
   const my = S.me ? moodOf(S.members.get(S.me)) : null;
-  return `<div class="ucard u-plan"><div class="row"><span class="bubble sm">${icon('cloud-sun',16)}</span><h3 style="flex:1">Météo de la tribu</h3>${!my && S.me ? '<span class="muted small">Et toi, ça va ?</span>' : ''}</div>
+  return `<div class="ucard u-plan"><div class="row" style="flex-wrap:wrap"><span class="bubble sm">${icon('cloud-sun',16)}</span><h3 style="flex:1;min-width:0">Météo de la tribu</h3>${!my && S.me ? '<span class="muted small">Et toi, ça va ?</span>' : ''}</div>
     <div class="meteos">${cells}</div>${help}</div>`;
 }
 SHEETS.mood = () => { const m = S.members.get(S.draft.mid); if (!m) return ''; const cur = moodOf(m);

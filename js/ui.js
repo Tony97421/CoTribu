@@ -31,7 +31,7 @@ function topbar(){
   const ms = sorted(S.members).slice(0,5);
   return `<div class="topbar">
     <button class="wordmark" data-act="tab" data-v="today" aria-label="CoTribu, accueil"><span class="name">Co<b>Tribu</b></span><span class="tagline">Le quotidien se partage</span></button>
-    <div class="people">${ms.map(m=>`<button style="border:0;background:none;padding:0;margin-left:-9px" data-act="editMember" data-id="${m.id}" aria-label="${esc(m.name)}">${avatar(m.id)}</button>`).join('')}<button class="plus" data-act="addMemberSheet" aria-label="Ajouter un membre">${icon('plus',18)}</button></div>
+    <div class="people">${(ms.length > 4 ? ms.slice(0,3) : ms).map(m=>`<button style="border:0;background:none;padding:0;margin-left:-9px" data-act="editMember" data-id="${m.id}" aria-label="${esc(m.name)}">${avatar(m.id)}</button>`).join('')}${ms.length > 4 ? `<button class="more" style="margin-left:-9px" data-act="plusGo" data-v="foyer" aria-label="Toute la famille">+${ms.length - 3}</button>` : ''}<button class="plus" data-act="addMemberSheet" aria-label="Ajouter un membre">${icon('plus',18)}</button></div>
   </div>`;
 }
 function ptitle(title, sub, right=''){
