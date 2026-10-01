@@ -15,15 +15,7 @@ VIEWS.today = () => {
   }
   h += whoAmICard() + firstStepsCard() + (typeof newsCard === 'function' ? newsCard() : '') + installCard(true);
   h += (typeof thanksCard === 'function' ? thanksCard() : '') + (typeof rateCard === 'function' ? rateCard() : '') + pauseCard('today') + throwbackHero() + countdownCard();
-  let contextual = '';
-  const pk = prevMonthKey();
-  if (+today.slice(8) <= 5 && LS.get('cotribu-dismiss-bilan') !== pk && sorted(S.members).some(m => !m.kid && thinkTotal(m, pk) > 0))
-    contextual += `<div class="ucard u-lav"><div class="row"><span class="bubble sm">${icon('brain',16)}</span><h3 style="flex:1">Le bilan de ${esc(MON[+pk.slice(5)-1])}</h3><button class="x" style="border:0;background:none;color:var(--muted)" data-act="dismissBilan" data-v="${pk}" aria-label="Masquer">${icon('x',18)}</button></div>
-      <span class="small">${esc(chargeInsight(pk))}</span><button class="btn upri sm" data-act="goCharge" data-v="${pk}">Voir qui pense à quoi</button></div>`;
-  const reqs = openRequests().slice(0,2);
-  if (reqs.length) contextual += `<div class="ucard u-lav"><button class="chead" data-act="plusGo" data-v="proches"><span class="bubble sm">${icon('hand-heart',16)}</span><h3>Demandes aux proches</h3><span class="spacer"></span><span class="go">${icon('chevron-right',18)}</span></button>${reqs.map(r => `<div class="row" style="justify-content:space-between;gap:8px"><span><strong>${esc(r.title)}</strong><br><span class="muted small">${esc(reqWhen(r))}</span></span>${reqStatus(r)}</div>`).join('')}</div>`;
-
-  h += contextual + homeBlocks({today, tasks, list, late, done, total});
+  h += homeBlocks({today, tasks, list, late, done, total});
   return h;
 };
 /* ---------- Accueil personnalisable : blocs dans l'ordre choisi par chacun ---------- */
@@ -38,6 +30,16 @@ const HOME_BLOCKS = {
     <button class="addline" data-act="newTask">${icon('plus',20)}Ajouter une tâche</button></div>`;
 
   }},
+  bilan:    {label:'Bilan du mois (début de mois)', icon:'brain', size:'full', html: c => { const today = c.today;
+  const pk = prevMonthKey();
+  if (+today.slice(8) <= 5 && LS.get('cotribu-dismiss-bilan') !== pk && sorted(S.members).some(m => !m.kid && thinkTotal(m, pk) > 0)) {
+    return `<div class="ucard u-lav"><div class="row"><span class="bubble sm">${icon('brain',16)}</span><h3 style="flex:1">Le bilan de ${esc(MON[+pk.slice(5)-1])}</h3><button class="x" style="border:0;background:none;color:var(--muted)" data-act="dismissBilan" data-v="${pk}" aria-label="Masquer">${icon('x',18)}</button></div>
+      <span class="small">${esc(chargeInsight(pk))}</span><button class="btn upri sm" data-act="goCharge" data-v="${pk}">Voir qui pense à quoi</button></div>`; }
+    return ''; }},
+  demandes: {label:'Demandes aux proches', icon:'hand-heart', size:'full', html: () => {
+  const reqs = openRequests().slice(0,2);
+  if (reqs.length) return `<div class="ucard u-lav"><button class="chead" data-act="plusGo" data-v="proches"><span class="bubble sm">${icon('hand-heart',16)}</span><h3>Demandes aux proches</h3><span class="spacer"></span><span class="go">${icon('chevron-right',18)}</span></button>${reqs.map(r => `<div class="row" style="justify-content:space-between;gap:8px"><span><strong>${esc(r.title)}</strong><br><span class="muted small">${esc(reqWhen(r))}</span></span>${reqStatus(r)}</div>`).join('')}</div>`;
+    return ''; }},
   meteo:    {label:'Météo de la tribu', icon:'cloud-sun', size:'full', html: () => meteoCard()},
   points:   {label:'Points de la semaine', icon:'star', size:'full', html: () => {
   const champs = sorted(S.members).map(m => ({m, w: weekPts(m)})).filter(x => x.w > 0).sort((a,b) => b.w - a.w);
@@ -79,7 +81,7 @@ const HOME_BLOCKS = {
       ${lastMem ? `<button style="border:0;background:none;padding:0;text-align:left;color:inherit;display:flex;flex-direction:column;gap:6px" data-act="openMemory" data-id="${lastMem.id}">${(lastMem.photos||[])[0]?`<span class="memthumb" style="width:100%;height:90px">${photoImg(lastMem.photos[0])}</span>`:''}<span class="kicker">${esc(tb ? agoLabel(tb) : 'Dernier souvenir')}</span><strong>${esc(lastMem.title)}</strong></button>` : '<span class="muted small">Les beaux moments de la famille, gardés ici.</span>'}
       <button class="addline" data-act="newMemory">${icon('plus',18)}Souvenir</button></div>`; }},
 };
-const HOME_DEFAULT = ['meteo', 'taches', 'points', 'planning', 'repas', 'courses', 'souvenirs'];
+const HOME_DEFAULT = ['meteo', 'bilan', 'demandes', 'taches', 'points', 'planning', 'repas', 'courses', 'souvenirs'];
 function homePrefs(){
   const m = S.me && S.members.get(S.me), saved = (m && m.home) || LS.getJSON('cotribu-home-' + (S.hh && S.hh.id)) || {};
   const order = (saved.order || []).filter(k => HOME_BLOCKS[k]);
@@ -107,7 +109,7 @@ function homeBlocks(c){
 function homeEditor(){
   const p = homePrefs();
   return `<div class="card"><div class="row"><h3 style="flex:1">Personnaliser l’accueil</h3><button class="btn primary sm" data-act="homeDone">Terminé</button></div>
-    <span class="muted small">Fais glisser les blocs avec la poignée pour changer l’ordre. Touche l’œil pour masquer ou afficher un bloc. Ton accueil n’est pas modifié chez les autres.</span>
+    <span class="muted small">Fais glisser les blocs avec la poignée pour changer l’ordre. Touche l’œil pour masquer ou afficher un bloc. Le bilan et les demandes n’apparaissent que lorsqu’il y a quelque chose à montrer. Ton accueil n’est pas modifié chez les autres.</span>
     <div class="homelist" data-sort="home">${p.order.map(k => { const b = HOME_BLOCKS[k], off = p.hidden.includes(k);
       return `<div class="homerow ${off ? 'off' : ''}" data-sid="${k}"><span class="grip" data-grip aria-label="Déplacer">${icon('grip-vertical',20)}</span><span class="bubble sm">${icon(b.icon,16)}</span><span style="flex:1;font-weight:600">${b.label}</span>
         <button class="iconbtn" data-act="homeToggle" data-v="${k}" aria-pressed="${!off}" aria-label="${off ? 'Afficher' : 'Masquer'} ${b.label}">${icon(off ? 'eye-off' : 'eye', 20)}</button></div>`; }).join('')}</div>
