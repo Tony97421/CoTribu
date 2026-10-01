@@ -13,7 +13,7 @@ S.procheCode = (QS.get('proche') || '').toUpperCase().slice(0,6);
 if (S.joinCode) S.welcomeMode = 'join';
 if (S.procheCode) S.welcomeMode = 'proche';
 S.role = 'member';
-const HH_COLS = 'id,name,invite_code,proche_code,premium_until,premium_source';
+const HH_COLS = 'id,name,premium_until,premium_source';   // les codes d'invitation se lisent à part (réservés à la famille)
 let channel = null;
 
 const queues = new Map();
@@ -60,9 +60,22 @@ async function loadAll(){
   data.forEach(r => { const c = appCol(r.col, r.id); if (next[c]) next[c].set(r.id, {...r.data, id:r.id}); });
   Object.assign(S, next);
   const h = await sb.from('households').select(HH_COLS).eq('id', S.hh.id).maybeSingle();
-  if (h.data) { S.hh = h.data; S.meta = {name:h.data.name}; }
+  if (h.data) { const codes = {invite_code:S.hh.invite_code, proche_code:S.hh.proche_code}; S.hh = {...codes, ...h.data}; S.meta = {name:h.data.name}; }
   S.loaded = true;
   render();
+  if (S.role !== 'proche') { await loadCodes(); await loadDevices(); render(); }
+}
+async function loadCodes(){
+  const r = await sb.rpc('household_codes', {p_household:S.hh.id});
+  if (!r.error && r.data) { Object.assign(S.hh, r.data); return; }
+  const o = await sb.from('households').select('invite_code,proche_code').eq('id', S.hh.id).maybeSingle();   // base pas encore à jour
+  if (o.data) Object.assign(S.hh, o.data);
+}
+// appareils connectés au foyer (visible par la famille seulement)
+async function loadDevices(){
+  const {data} = await sb.from('household_users').select('user_id, member_id, role, joined_at').eq('household_id', S.hh.id);
+  if (data) S.devices = data;
+  if (!S.uid) S.uid = ((await sb.auth.getSession()).data.session || {user:{}}).user.id;
 }
 function subscribe(){
   if (channel) sb.removeChannel(channel);
@@ -104,6 +117,8 @@ async function ensureSession(){
 function explain(err){
   const m = (err && (err.message || err.msg) || '').toLowerCase();
   if (m.includes('code_invalide')) return 'Code introuvable. Vérifie les 6 caractères.';
+  if (m.includes('trop_essais')) return 'Trop de codes essayés. Réessaie dans une heure, ou demande le bon code à ta famille.';
+  if (m.includes('pas_membre')) return 'Seule la famille peut faire ça.';
   if (m.includes('code_cadeau_invalide')) return 'Ce code cadeau n’existe pas.';
   if (m.includes('code_cadeau_epuise')) return 'Ce code cadeau a déjà été utilisé.';
   if (m.includes('code_cadeau_deja_utilise')) return 'Ton foyer a déjà utilisé ce code.';
@@ -150,6 +165,7 @@ async function joinAsProche(){
     await ensureSession();
     const {data:h, error} = await sb.rpc('join_as_proche', {p_code:code, p_name:name});
     if (error) throw error;
+    if (!h || !h.id) throw new Error('code_invalide');
     history.replaceState(null, '', location.pathname);
     const u = (await sb.auth.getUser()).data.user;
     const {data:hu} = await sb.from('household_users').select('role, member_id').eq('household_id', h.id).eq('user_id', u.id).maybeSingle();
@@ -169,6 +185,7 @@ async function joinHousehold(){
     await ensureSession();
     const {data:h, error} = await sb.rpc('join_household', {p_code:code});
     if (error) throw error;
+    if (!h || !h.id) throw new Error('code_invalide');
     history.replaceState(null, '', location.pathname);
     S.busy = false; S.tab = 'today';
     const u = (await sb.auth.getUser()).data.user;
@@ -186,12 +203,62 @@ async function setMe(id){
   const u = (await sb.auth.getUser()).data.user;
   if (u) sb.from('household_users').update({member_id:id}).eq('household_id', S.hh.id).eq('user_id', u.id).then(()=>{});
 }
-async function leaveHousehold(){
-  const u = (await sb.auth.getUser()).data.user;
-  await sb.from('household_users').delete().eq('household_id', S.hh.id).eq('user_id', u.id);
+// dernier adulte du foyer sur ce téléphone ? (en partant, le foyer et ses photos sont alors effacés)
+const lastAdult = () => S.role !== 'proche' && (S.devices || []).filter(d => d.role !== 'proche').length <= 1;
+async function wipePhotos(hid){
+  const bucket = sb.storage.from('souvenirs');
+  for (const dir of [hid, hid + '/avatars']) {
+    for (let i = 0; i < 50; i++) {
+      const {data, error} = await bucket.list(dir, {limit:100});
+      if (error || !data) break;
+      const files = data.filter(f => f.id || /\.\w+$/.test(f.name)).map(f => dir + '/' + f.name);
+      if (!files.length) break;
+      const r = await bucket.remove(files); if (r.error) break;
+    }
+  }
+}
+function resetLocal(){
   if (channel) sb.removeChannel(channel);
-  LS.set('cotribu-hh', ''); S.hh = null; COLS.forEach(c => S[c] = new Map());
+  LS.set('cotribu-hh', ''); S.hh = null; S.devices = null; COLS.forEach(c => S[c] = new Map());
   S.mode = 'welcome'; render();
+}
+async function leaveHousehold(){
+  const hid = S.hh.id;
+  try {
+    if (S.role !== 'proche') { await loadDevices(); if (lastAdult()) await wipePhotos(hid); }
+    const r = await sb.rpc('leave_household', {p_household:hid});
+    if (r.error) { const u = (await sb.auth.getUser()).data.user; await sb.from('household_users').delete().eq('household_id', hid).eq('user_id', u.id); }
+  } catch(e) { console.warn(e); }
+  resetLocal();
+}
+// RGPD : effacement complet (tous les foyers de ce téléphone, puis le compte)
+async function deleteAccount(){
+  S.busy = true; render();
+  try {
+    const u = (await sb.auth.getUser()).data.user;
+    const {data:mine} = await sb.from('household_users').select('household_id, role').eq('user_id', u.id);
+    for (const m of mine || []) {
+      if (m.role === 'proche') continue;
+      const {data:adults} = await sb.from('household_users').select('user_id').eq('household_id', m.household_id).neq('role', 'proche');
+      if ((adults || []).length <= 1) await wipePhotos(m.household_id);
+    }
+    const {error} = await sb.rpc('delete_my_account');
+    if (error) throw error;
+    try { const reg = await navigator.serviceWorker.ready; const sub = await reg.pushManager.getSubscription(); if (sub) await sub.unsubscribe(); } catch(_){}
+    await sb.auth.signOut().catch(() => {});
+    try { Object.keys(localStorage).filter(k => k.startsWith('cotribu')).forEach(k => localStorage.removeItem(k)); } catch(_){}
+    S.busy = false; resetLocal();
+    toast('Ton compte et tes données ont été supprimés.');
+  } catch(e) { S.busy = false; render(); toast(explain(e)); }
+}
+// RGPD : copie de toutes les données du foyer, lisible (JSON)
+function exportData(){
+  const out = {appli:'CoTribu', exporte_le:new Date().toISOString(), foyer:{nom:S.hh && S.hh.name}};
+  COLS.forEach(c => { if (S[c] && S[c].size) out[c] = [...S[c].values()]; });
+  const blob = new Blob([JSON.stringify(out, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `cotribu-mes-donnees-${localToday()}.json`;
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  toast('Fichier téléchargé. Les photos s’enregistrent une à une depuis chaque souvenir.');
 }
 
 /* ---------- install (PWA) ---------- */

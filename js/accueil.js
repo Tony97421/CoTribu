@@ -109,14 +109,41 @@ function viewFoyer(){
     <span class="small">Envoie ce lien à chaque membre. En l’ouvrant, il rejoint directement le foyer et voit tout en direct.</span>
     <div class="code num" aria-label="Code d’invitation">${esc(S.hh.invite_code)}</div>
     <input type="text" id="inv-link" readonly value="${esc(inviteLink())}" aria-label="Lien d’invitation">
-    <button class="btn primary" data-act="share">${icon('share-2',18)}Envoyer l’invitation</button></div>`;
+    <button class="btn primary" data-act="share">${icon('share-2',18)}Envoyer l’invitation</button>
+    <button class="btn ghost sm ${S.armed==='renewfamily'?'armed':''}" data-act="renewCode" data-v="family">${S.armed==='renewfamily'?'Confirmer : l’ancien code ne marchera plus':'Changer de code'}</button></div>`;
+  h += devicesCard();
   h += `<div class="card"><h3>Repartir de zéro</h3><span class="muted small">Remplace toutes les pièces et tâches par le modèle « Entretien maison standard ». Membres, courses, planning et souvenirs sont conservés.</span>
     <button class="btn danger ${S.armed==='reset'?'armed':''}" data-act="reset">${S.armed==='reset'?'Confirmer : tout remplacer':'Recharger le modèle'}</button></div>`;
+  const last = typeof lastAdult === 'function' && lastAdult();
   h += `<div class="card"><h3>Ce téléphone</h3><span class="muted small">Si tu changes de téléphone ou effaces les données du navigateur, rejoins simplement le foyer avec le code ci-dessus.</span>
-    <button class="btn danger ${S.armed==='leave'?'armed':''}" data-act="leave">${S.armed==='leave'?'Confirmer : quitter ce foyer':'Quitter ce foyer sur ce téléphone'}</button></div>`;
+    ${last ? `<span class="info">Tu es le dernier adulte connecté : en quittant, le foyer et tout son contenu (photos comprises) seront effacés.</span>` : ''}
+    <button class="btn danger ${S.armed==='leave'?'armed':''}" data-act="leave">${S.armed==='leave'?(last?'Confirmer : quitter et tout effacer':'Confirmer : quitter ce foyer'):'Quitter ce foyer sur ce téléphone'}</button></div>`;
+  h += privacyCard();
   return h;
 }
 
+/* ---------- Sécurité & données personnelles ---------- */
+function devicesCard(){
+  const ds = S.devices || []; if (!ds.length) return '';
+  const who = d => { const p = d.role === 'proche' ? S.proches.get(d.member_id) : S.members.get(d.member_id); return p ? p.name : (d.role === 'proche' ? 'Proche' : 'Profil pas encore choisi'); };
+  const list = [...ds].sort((a,b) => (b.user_id === S.uid) - (a.user_id === S.uid) || (a.role === 'proche') - (b.role === 'proche'));
+  return `<div class="card"><h3>Téléphones connectés</h3>
+    ${list.map(d => `<div class="mrow">${S.members.has(d.member_id) || S.proches.has(d.member_id) ? avatar(d.member_id) : `<span class="bubble sm">${icon('smartphone',16)}</span>`}
+      <span style="flex:1;min-width:0"><strong style="display:block">${esc(who(d))}${d.user_id === S.uid ? ' <span class="muted small">(ce téléphone)</span>' : ''}</strong>
+      <span class="muted small">${d.role === 'proche' ? 'Proche' : 'Famille'}${d.joined_at ? ' · depuis le ' + esc(fmt(String(d.joined_at).slice(0,10), {day:'numeric', month:'long', year:'numeric'})) : ''}</span></span>
+      ${d.user_id === S.uid ? '' : `<button class="btn danger sm ${S.armed==='dev'+d.user_id?'armed':''}" data-act="removeDevice" data-id="${esc(d.user_id)}">${S.armed==='dev'+d.user_id?'Confirmer':'Retirer'}</button>`}</div>`).join('')}
+    <span class="muted small">Un téléphone que tu ne reconnais pas ? Retire-le, puis change de code.</span></div>`;
+}
+function privacyCard(){
+  return `<div class="card"><h3>Mes données</h3>
+    <span class="muted small">Vos données restent à vous : pas de pub, pas de revente, jamais.</span>
+    <button class="btn soft" data-act="exportData">${icon('download',18)}Télécharger une copie de nos données</button>
+    <div class="row" style="gap:16px;flex-wrap:wrap"><a class="small" href="confidentialite.html" target="_blank" rel="noopener">Politique de confidentialité</a><a class="small" href="mentions-legales.html" target="_blank" rel="noopener">Mentions légales</a></div>
+    <button class="btn danger ${S.armed==='delacc'?'armed':''}" data-act="deleteAccount" ${S.busy?'disabled':''}>${S.busy?'Suppression…':S.armed==='delacc'?'Confirmer : tout supprimer définitivement':'Supprimer mon compte'}</button>
+    ${S.armed==='delacc' ? `<span class="info">Ce téléphone quitte tous ses foyers et le compte est effacé. ${S.role === 'proche' ? '' : 'Si tu es le dernier adulte, le foyer, ses tâches, courses, recettes et photos sont effacés aussi.'} C’est définitif.</span>` : ''}</div>`;
+}
+
+const legalLine = () => `<span class="muted small" style="text-align:center">En continuant, tu acceptes la <a href="confidentialite.html" target="_blank" rel="noopener">politique de confidentialité</a>. Pas de pub, pas de revente de données.</span>`;
 /* ---------- Bienvenue ---------- */
 VIEWS.welcome = () => {
   const names = S.welcome || (S.welcome = ['','']);
@@ -128,7 +155,7 @@ VIEWS.welcome = () => {
       <label class="f" for="p-name">Ton prénom, ou comment la famille t’appelle<input type="text" id="p-name" data-ch="pName" value="${esc(S.procheName||'')}" placeholder="Ex. Mamie, Nounou Sarah"></label>
       <label class="f" for="p-code">Code<input type="text" id="p-code" class="codein num" data-ch="pCode" value="${esc(S.procheCode||'')}" maxlength="6" autocomplete="off" autocapitalize="characters"></label>
       <button class="btn upri" data-act="pJoin" ${S.busy?'disabled':''}>${S.busy?'Connexion…':'Rejoindre'}</button></div>
-      <button class="btn ghost" data-act="wMode" data-v="create">Je veux plutôt créer ma propre famille</button>`;
+      <button class="btn ghost" data-act="wMode" data-v="create">Je veux plutôt créer ma propre famille</button>` + legalLine();
   }
   h += seg('wMode', S.welcomeMode, [['create','Créer un foyer'],['join','Rejoindre un foyer']], 'u-home');
   if (S.welcomeMode === 'join') {
@@ -152,7 +179,7 @@ VIEWS.welcome = () => {
       ${AI_ON ? `<label class="f" for="w-desc">Ou décris ta maison, l’IA prépare tout (facultatif)<textarea id="w-desc" data-ch="wDesc" placeholder="Ex. maison avec jardin, 2 enfants de 6 et 10 ans, un chien, on travaille tous les deux">${esc(S.wDesc||'')}</textarea></label>` : ''}
       <button class="btn deep" data-act="wGo" ${S.busy?'disabled':''}>${S.busy?'Création…':'Créer le foyer'}</button></div>`;
   }
-  return h;
+  return h + legalLine();
 };
 
 Object.assign(H, {
@@ -172,6 +199,24 @@ Object.assign(H, {
   wGo: () => createHousehold(),
   join: () => joinHousehold(),
   leave: () => { if (S.armed !== 'leave') { S.armed = 'leave'; render(); return; } S.armed = null; leaveHousehold(); },
+  renewCode: async el => {
+    const kind = el.dataset.v, k = 'renew' + kind; if (S.armed !== k) { S.armed = k; render(); return; }
+    S.armed = null; const {data, error} = await sb.rpc('renew_code', {p_household:S.hh.id, p_kind:kind});
+    if (error) { toast(explain(error)); return; }
+    S.hh[kind === 'proche' ? 'proche_code' : 'invite_code'] = data; render(); toast('Nouveau code : ' + data + '. L’ancien ne marche plus.');
+  },
+  removeDevice: async el => {
+    const k = 'dev' + el.dataset.id; if (S.armed !== k) { S.armed = k; render(); return; }
+    S.armed = null; const {error} = await sb.rpc('remove_device', {p_household:S.hh.id, p_user:el.dataset.id});
+    if (error) { toast(explain(error)); return; }
+    S.devices = (S.devices||[]).filter(d => d.user_id !== el.dataset.id); render();
+    toast('Accès retiré. Pense à changer de code pour qu’il ne puisse pas revenir.');
+  },
+  exportData: () => exportData(),
+  deleteAccount: () => {
+    if (S.armed !== 'delacc') { S.armed = 'delacc'; render(); return; }
+    S.armed = null; deleteAccount();
+  },
   color: el => { const m = clone(S.members.get(el.dataset.id)); m.color = ((m.color||0)+1) % COLORS.length; put('members', m); render(); },
   delMember: el => { const k = 'm'+el.dataset.id; if (S.armed !== k) { S.armed = k; render(); return; } S.armed = null; del('members', el.dataset.id); if (S.me === el.dataset.id) { S.me = null; } render(); },
   reset: async () => {

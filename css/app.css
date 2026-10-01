@@ -609,3 +609,4 @@ body.sheet-open{overflow:hidden}
 .importbox .row input{min-width:0}
 .importbox .row .btn{flex:none}
 .task .when:empty{display:none}
+.card a.small,.muted a{color:var(--accent-deep,#3F6150);font-weight:600}

@@ -40,10 +40,11 @@ function viewProches(){
   const ps = sorted(S.proches);
   h += `<div class="card u-lav"><div class="row"><span class="bubble">${icon('users',18)}</span><h3>Le cercle de proches</h3></div>
     ${ps.length ? ps.map(p => `<div class="mrow">${avatar(p.id,'lg')}<span style="flex:1;font-weight:600">${esc(p.name)}</span><button class="btn danger sm ${S.armed==='p'+p.id?'armed':''}" data-act="removeProche" data-id="${p.id}">${S.armed==='p'+p.id?'Confirmer':'Retirer'}</button></div>`).join('') : '<span class="muted small">Personne pour l’instant.</span>'}
-    <span class="small">Un proche ne voit ni vos tâches, ni vos courses, ni vos souvenirs : seulement les demandes que vous lui envoyez et les moments où il est attendu.</span>
+    <span class="small">Un proche ne voit ni vos tâches, ni vos courses : seulement les demandes que vous lui envoyez, les moments où il est attendu et les souvenirs que vous choisissez de partager avec lui.</span>
     <div class="code num" style="background:var(--lav-soft);color:var(--lav-text)">${esc(S.hh.proche_code||'······')}</div>
     <div class="linkbox"><input type="text" id="proche-link" readonly value="${esc(procheLink())}" aria-label="Lien pour les proches"></div>
-    <button class="btn upri" data-act="shareProche">${icon('share-2',18)}Inviter un proche</button></div>`;
+    <button class="btn upri" data-act="shareProche">${icon('share-2',18)}Inviter un proche</button>
+    <button class="btn ghost sm ${S.armed==='renewproche'?'armed':''}" data-act="renewCode" data-v="proche">${S.armed==='renewproche'?'Confirmer : l’ancien code ne marchera plus':'Changer de code'}</button></div>`;
   h += `<div class="row"><h2 style="flex:1">Demandes</h2><button class="btn upri sm u-lav" data-act="newRequest">${icon('plus',16)}Nouvelle demande</button></div>`;
   const list = [...S.requests.values()].sort((a,b) => (a.date < localToday()) - (b.date < localToday()) || a.date.localeCompare(b.date));
   h += list.length ? list.slice(0,30).map(r => reqCard(r)).join('') : `<div class="empty"><span class="muted">Besoin que Mamie garde les enfants samedi ? Crée une demande : elle reçoit une notification et répond en un geste.</span></div>`;
@@ -116,7 +117,9 @@ VIEWS.proche = () => {
   const mems = [...S.memories.values()].filter(m => (m.proches||[]).includes(S.me)).sort((a,b) => b.date.localeCompare(a.date));
   if (mems.length) h += `<h2>Souvenirs partagés avec toi</h2><div style="display:flex;flex-direction:column;gap:12px">${mems.slice(0, 20).map(memoCard).join('')}</div>`;
   h += pushCard() + installCard(false);
-  h += `<div class="card"><span class="muted small">Tu ne vois que ce que la famille partage avec toi.</span><button class="btn danger ${S.armed==='leave'?'armed':''}" data-act="leave">${S.armed==='leave'?'Confirmer : quitter ce cercle':'Quitter ce cercle sur ce téléphone'}</button></div>`;
+  h += `<div class="card"><span class="muted small">Tu ne vois que ce que la famille partage avec toi.</span><button class="btn danger ${S.armed==='leave'?'armed':''}" data-act="leave">${S.armed==='leave'?'Confirmer : quitter ce cercle':'Quitter ce cercle sur ce téléphone'}</button>
+    <div class="row" style="gap:16px;flex-wrap:wrap"><a class="small" href="confidentialite.html" target="_blank" rel="noopener">Politique de confidentialité</a><a class="small" href="mentions-legales.html" target="_blank" rel="noopener">Mentions légales</a></div>
+    <button class="btn ghost sm ${S.armed==='delacc'?'armed':''}" data-act="deleteAccount" ${S.busy?'disabled':''}>${S.busy?'Suppression…':S.armed==='delacc'?'Confirmer : supprimer mon compte définitivement':'Supprimer mon compte'}</button></div>`;
   return h;
 };
 SHEETS.counter = () => `<h2>Proposer autre chose</h2>

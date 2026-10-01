@@ -1,0 +1,22 @@
+/* Pages légales de CoTribu (confidentialité, mentions légales, suppression du compte) */
+:root{--bg:#FAF8F4;--card:#fff;--ink:#2F302D;--muted:#6F706A;--accent:#3F6150;--line:#E8E4DC;--mark:#FCEBC0}
+@media (prefers-color-scheme: dark){:root{--bg:#1B1C1A;--card:#252623;--ink:#ECEAE4;--muted:#A9A89F;--accent:#9DC0AA;--line:#34352F;--mark:#5A4A1C}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 'Figtree',system-ui,sans-serif;-webkit-text-size-adjust:100%}
+main{max-width:720px;margin:0 auto;padding:28px 16px 64px}
+.brand{font-family:'Fredoka',sans-serif;font-weight:600;font-size:28px;color:var(--accent);text-decoration:none}
+.brand span{color:var(--ink)}
+h1{font-family:'Fraunces',serif;font-weight:600;font-size:32px;line-height:1.15;margin:18px 0 6px}
+h2{font-family:'Fraunces',serif;font-weight:600;font-size:21px;margin:34px 0 8px}
+h3{font-size:16px;margin:20px 0 4px}
+.muted{color:var(--muted);font-size:14px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin:16px 0}
+ul,ol{padding-left:22px}
+li{margin:4px 0}
+a{color:var(--accent)}
+mark{background:var(--mark);color:inherit;border-radius:4px;padding:0 4px}
+table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0}
+th,td{text-align:left;vertical-align:top;padding:8px 6px;border-bottom:1px solid var(--line)}
+th{font-weight:700}
+.wrap{overflow-x:auto}
+footer{margin-top:40px;font-size:14px;color:var(--muted);display:flex;gap:16px;flex-wrap:wrap}
