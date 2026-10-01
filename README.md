@@ -60,3 +60,7 @@ L'app est ensuite disponible sur `https://tony97421.github.io/CoTribu/`.
 ## À venir
 
 - Version Play Store
+
+## Droits
+
+© 2026 SARL TECHER — CoTribu. Tous droits réservés. Le code est visible mais pas libre de droits : voir [LICENSE](LICENSE).
