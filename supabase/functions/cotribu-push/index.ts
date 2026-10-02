@@ -37,6 +37,7 @@ const hm = (t) => { if (!t) return ""; const [h, m] = String(t).split(":"); retu
 
 function isOn(rec, ds) {
   if (!rec) return false;
+  if (rec.type === "once") return ds === rec.date;
   if (rec.type === "weekly") {
     if (!(rec.days || []).includes(dow(ds))) return false;
     return mod(Math.floor((idx(ds) - idx(rec.anchor || ds)) / 7), rec.every || 1) === 0;
@@ -65,6 +66,7 @@ function intervalDue(t, p) {
   return d;
 }
 function dueToday(t, today, p) {
+  if (t.rec.type === "once") return !t.lastDone && !!t.rec.date && t.rec.date <= today;
   if (p && today >= p.from && today <= p.to) return false;
   if (t.rec.type === "interval") return t.lastDone !== today && intervalDue(t, p) <= today;
   if (t.done && t.done[today]) return false;

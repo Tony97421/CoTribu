@@ -93,6 +93,7 @@ h3{font-size:18px;line-height:1.2}
 /* ---- segmented tabs (couleur de l'univers) ---- */
 .seg{display:flex;background:var(--surface2);border-radius:16px;padding:4px;gap:2px}
 .seg button{flex:1;border:0;background:transparent;padding:9px 6px;border-radius:12px;font-weight:600;font-size:14px;color:var(--ink);min-height:40px;white-space:nowrap}
+.seg-wrap{display:grid;grid-template-columns:1fr 1fr}
 .seg button[aria-pressed="true"]{background:var(--u, var(--accent));color:var(--u-ink, #fff);box-shadow:var(--shadow)}
 .u-home{--u:var(--home);--u-soft:var(--home-soft);--u-text:var(--home-text);--u-ink:#fff}
 .u-plan{--u:var(--plan);--u-soft:var(--plan-soft);--u-text:var(--plan-text);--u-ink:#fff}

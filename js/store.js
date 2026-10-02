@@ -59,6 +59,8 @@ async function loadAll(){
   const next = {}; COLS.forEach(c => next[c] = new Map());
   data.forEach(r => { const c = appCol(r.col, r.id); if (next[c]) next[c].set(r.id, {...r.data, id:r.id}); });
   Object.assign(S, next);
+  // tâches ponctuelles faites depuis plus d'une semaine : on fait le ménage
+  if (S.role !== 'proche') { const lim = addDays(localToday(), -7); for (const t of S.tasks.values()) if (t.rec && t.rec.type === 'once' && t.lastDone && t.lastDone < lim) del('tasks', t.id); }
   const h = await sb.from('households').select(HH_COLS).eq('id', S.hh.id).maybeSingle();
   if (h.data) { const codes = {invite_code:S.hh.invite_code, proche_code:S.hh.proche_code}; S.hh = {...codes, ...h.data}; S.meta = {name:h.data.name}; }
   S.loaded = true;

@@ -26,6 +26,7 @@ const COLORS = ['#D98C6A','#9DB9C8','#B8AED1','#E8B7B4','#E5C77A','#A7C4A0','#9A
 /* ---------- recurrence engine ---------- */
 function isOn(rec, ds){
   if (!rec) return false;
+  if (rec.type === 'once') return ds === rec.date;
   if (rec.type === 'weekly'){
     if (!(rec.days||[]).includes(dow(ds))) return false;
     const w = Math.floor((idx(ds) - idx(rec.anchor || ds))/7);
@@ -85,6 +86,7 @@ function recLabel(rec){
     const e = rec.every||1;
     return e === 1 ? `${cap(part)} du mois` : `${cap(part)} du mois, tous les ${e} mois`;
   }
+  if (rec.type === 'once') return 'Une seule fois' + (rec.date ? ', le ' + fmtShort(rec.date) : '');
   if (rec.type === 'interval'){
     const n = rec.days;
     if (n % 365 === 0) return n === 365 ? 'Tous les ans' : `Tous les ${n/365} ans`;
@@ -111,6 +113,12 @@ function assigneesOn(t, ds){
 
 /* status for today */
 function todayStatus(t, today){
+  // tâche ponctuelle : visible à sa date, puis « en retard » tant qu'elle n'est pas cochée ; une fois faite, elle s'en va
+  if (t.rec.type === 'once'){
+    if (t.lastDone) return t.lastDone === today ? {show:true, done:true, late:false} : {show:false};
+    const d = t.rec.date || today;
+    return d <= today ? {show:true, done:false, late: d < today, since: d} : {show:false};
+  }
   if (pausedOn(today)) return (t.done && t.done[today]) || t.lastDone === today ? {show:true, done:true, late:false} : {show:false};
   if (t.rec.type === 'interval'){
     const due = intervalDue(t);
@@ -134,6 +142,7 @@ function todayStatus(t, today){
 function onDay(t, ds, today){
   if (ds !== today && pausedOn(ds)) return false;
   if (ds === today) { const s = todayStatus(t,today); return s.show && !s.late; }
+  if (t.rec.type === 'once') return !t.lastDone && t.rec.date === ds;
   if (t.rec.type === 'interval'){
     // project forward, assuming anything due by today gets done today
     let due = intervalDue(t);

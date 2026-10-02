@@ -139,6 +139,7 @@ function maisonRooms(){
   }).join('')}<button class="tile addt" data-act="newRoom">${icon('plus',28)}Nouvelle pièce</button></div>` + equipCard();
 }
 function nextLabel(t, today){
+  if (t.rec.type === 'once') return t.lastDone ? 'Faite' : t.rec.date === today ? 'Aujourd’hui' : fmtShort(t.rec.date);
   if (t.rec.type === 'interval'){ const due = intervalDue(t); return due <= today ? (due < today ? 'En retard' : 'Aujourd’hui') : fmtShort(due); }
   const n = nextOcc(t.rec, today)[0]; return n ? (n === today ? 'Aujourd’hui' : fmtShort(n)) : '—';
 }
@@ -166,6 +167,7 @@ function maisonRoutines(){
   for (const t of S.tasks.values()){
     if (!S.rooms.has(t.roomId)) continue;
     const r = t.rec;
+    if (r.type === 'once') continue; // les tâches ponctuelles ne sont pas des routines
     if ((r.type==='weekly' && r.days.length===7 && (r.every||1)===1) || (r.type==='interval' && r.days<=1)) groups.jour.push(t);
     else if (r.type==='weekly' || (r.type==='interval' && r.days<=14)) groups.semaine.push(t);
     else groups.mois.push(t);
@@ -190,6 +192,7 @@ function draftFromTask(t, roomId){
     weekly:{type:'weekly', days:[dow(today)], every:1, anchor:mon},
     monthly:{type:'monthly', mode:'nth', nth:1, weekday:dow(today), day:1, every:1, months:[], anchor:today.slice(0,7)},
     interval:{type:'interval', days:14, anchor:today},
+    once:{type:'once', date:today},
   };
   recs[base.rec.type] = {...recs[base.rec.type], ...clone(base.rec)};
   if (!recs.monthly.months) recs.monthly.months = [];
@@ -201,6 +204,7 @@ function draftFromTask(t, roomId){
 }
 function draftRec(d){
   const today = localToday();
+  if (d.rtype === 'once') return {type:'once', date: d.recs.once.date || today};
   if (d.rtype === 'interval') return {type:'interval', days:Math.max(1, Math.round((+d.ivN||1)*d.ivUnit)), anchor: d.recs.interval.anchor || today};
   if (d.rtype === 'monthly'){
     const m = d.recs.monthly;
@@ -215,7 +219,10 @@ SHEETS.task = () => {
   const rec = draftRec(d);
   const sg = (name, v, label, cur) => `<button data-act="${name}" data-v="${v}" aria-pressed="${cur===v}">${label}</button>`;
   let recFields = '';
-  if (d.rtype === 'weekly'){
+  if (d.rtype === 'once'){
+    recFields = `<label class="f" for="o-date">À faire le<input type="date" id="o-date" data-ch="oDate" value="${esc(d.recs.once.date || today)}" min="${today}"></label>
+      <div class="chips">${[[0,'Aujourd’hui'],[1,'Demain'],[2,'Après-demain'],[7,'Dans une semaine']].map(([n,l]) => `<button class="chip" data-act="oQuick" data-v="${n}" aria-pressed="${d.recs.once.date === addDays(today,n)}">${l}</button>`).join('')}</div>`;
+  } else if (d.rtype === 'weekly'){
     const w = d.recs.weekly;
     recFields = `<div class="chips">${WEEK_ORDER.map(i=>`<button class="chip sq" data-act="wday" data-v="${i}" aria-pressed="${w.days.includes(i)}" aria-label="${DAYN[i]}">${DAYL[i]}</button>`).join('')}</div>
       <div class="frow"><label class="f" for="w-every">Rythme<select id="w-every" data-ch="wEvery">
@@ -239,7 +246,8 @@ SHEETS.task = () => {
       <span class="info">Compté à partir de la dernière fois où c’est fait. Faites-le avec 5 jours de retard, le prochain rappel part de ce jour-là.</span>`;
   }
   let prev;
-  if (rec.type === 'interval') prev = `Prochaine fois : <b>${esc(fmtShort(d.id ? intervalDue({...d, rec}) : (rec.anchor||today)))}</b>, puis ${esc(recLabel(rec).toLowerCase())}.`;
+  if (rec.type === 'once') { const w = rec.date === today ? 'aujourd’hui' : 'le ' + fmtShort(rec.date); prev = `À faire <b>${esc(w.replace(/\.$/, ''))}</b>. Si elle n’est pas faite, elle reste « En retard » jusqu’à ce que quelqu’un la coche, puis elle disparaît.`; }
+  else if (rec.type === 'interval') prev = `Prochaine fois : <b>${esc(fmtShort(d.id ? intervalDue({...d, rec}) : (rec.anchor||today)))}</b>, puis ${esc(recLabel(rec).toLowerCase())}.`;
   else { const n = nextOcc(rec, today, 3); prev = n.length ? `Prochaines fois : <b>${n.map(fmtShort).map(esc).join('</b>, <b>')}</b>` : 'Choisissez au moins un jour.'; }
   const a = d.assign; const ms = sorted(S.members);
   const memberChips = ms.map(m => { const pos = a.members.indexOf(m.id); return `<button class="chip" data-act="amember" data-id="${m.id}" aria-pressed="${pos>=0}">${a.mode==='rotation' && pos>=0 ? `<span class="n">${pos+1}</span>` : avatar(m.id)}${esc(m.name)}</button>`; }).join('');
@@ -252,13 +260,13 @@ SHEETS.task = () => {
     <div class="sect"><label class="f" for="t-name">Tâche<input type="text" id="t-name" data-ch="tName" value="${esc(d.name)}" placeholder="Ex. Nettoyer les vitres"></label>
       <label class="f" for="t-room">Pièce<select id="t-room" data-ch="tRoom">${sorted(S.rooms).map(r=>`<option value="${r.id}" ${r.id===d.roomId?'selected':''}>${esc(r.name)}</option>`).join('')}</select></label></div>
     <div class="sect u-home"><span class="eyebrow">Quand</span>
-      <div class="seg">${sg('rtype','weekly','Jours fixes',d.rtype)}${sg('rtype','monthly','Chaque mois',d.rtype)}${sg('rtype','interval','Après un délai',d.rtype)}</div>
+      <div class="seg seg-wrap">${sg('rtype','once','Une seule fois',d.rtype)}${sg('rtype','weekly','Jours fixes',d.rtype)}${sg('rtype','monthly','Chaque mois',d.rtype)}${sg('rtype','interval','Après un délai',d.rtype)}</div>
       ${recFields}
       <div class="preview">${prev}</div></div>
     <div class="sect u-home"><span class="eyebrow">Horaire (facultatif)</span>
       <div class="seg">${sg('tmode','none','Dans la journée',d.tmode)}${sg('tmode','at','À une heure',d.tmode)}${sg('tmode','before','Avant',d.tmode)}</div>
       ${d.tmode !== 'none' ? `<label class="f" for="t-at">Heure<input type="time" id="t-at" data-ch="tAt" value="${esc(d.tat)}"></label>` : ''}</div>
-    ${d.rtype !== 'interval' ? `<div class="sect u-home"><span class="eyebrow">Si elle n’est pas faite</span>
+    ${d.rtype !== 'interval' && d.rtype !== 'once' ? `<div class="sect u-home"><span class="eyebrow">Si elle n’est pas faite</span>
       <div class="seg">${sg('carry','1','Reste en retard',d.carry?'1':'0')}${sg('carry','0','Attend la prochaine fois',d.carry?'1':'0')}</div>
       <span class="info">${d.carry ? 'Elle reste dans « En retard » jusqu’à ce que quelqu’un la coche. Idéal pour ce qui est rare.' : 'Elle disparaît et revient à la prochaine date. Idéal pour ce qui est fréquent.'}</span></div>` : ''}
     <div class="sect u-shop"><span class="eyebrow">Points gagnés</span>
@@ -295,6 +303,7 @@ Object.assign(H, {
   editTask: el => { const t = S.tasks.get(el.dataset.id); if (!t) return; S.draft = draftFromTask(t); openSheet('task'); },
   newTask: el => { if (!S.rooms.size) { toast('Crée d’abord une pièce.'); return; } S.draft = draftFromTask(null, el.dataset.room); openSheet('task'); },
   rtype: el => { S.draft.rtype = el.dataset.v; renderSheet(); },
+  oQuick: el => { S.draft.recs.once.date = addDays(localToday(), +el.dataset.v); renderSheet(); },
   tmode: el => { S.draft.tmode = el.dataset.v; renderSheet(); },
   tPoints: el => { S.draft.points = +el.dataset.v; renderSheet(); },
   carry: el => { S.draft.carry = el.dataset.v === '1'; renderSheet(); },
@@ -312,7 +321,7 @@ Object.assign(H, {
     const today = localToday();
     const siblings = [...S.tasks.values()].filter(t=>t.roomId===d.roomId);
     const t = {
-      id: d.id || uid('t'), roomId:d.roomId, name, rec, carry: rec.type==='interval' ? true : !!d.carry,
+      id: d.id || uid('t'), roomId:d.roomId, name, rec, carry: rec.type==='interval' || rec.type==='once' ? true : !!d.carry,
       time: d.tmode === 'none' || !d.tat ? null : {mode:d.tmode, at:d.tat}, points: d.points ?? 1,
       assign:{mode:d.assign.mode, members: d.assign.mode==='anyone' ? [] : d.assign.members, anchor:d.assign.anchor || mondayOf(today)},
       order: old ? old.order : (Math.max(0,...siblings.map(s=>s.order||0))+1),
@@ -351,6 +360,7 @@ Object.assign(CH, {
   tName: el => { S.draft.name = el.value; },
   tRoom: el => { S.draft.roomId = el.value; },
   tAt: el => { S.draft.tat = el.value; },
+  oDate: el => { if (el.value) { S.draft.recs.once.date = el.value; renderSheet(); } },
   rName: el => { S.draft.name = el.value; },
   wEvery: el => { S.draft.recs.weekly.every = +el.value; renderSheet(); },
   wStart: el => { S.draft.recs.weekly.anchor = addDays(mondayOf(localToday()), +el.value); renderSheet(); },
