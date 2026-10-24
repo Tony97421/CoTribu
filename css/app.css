@@ -630,3 +630,5 @@ body.sheet-open{overflow:hidden}
 .chead .go,.chead .bubble{flex-shrink:0}
 .grid2 .chead{gap:8px}
 @media (max-width:350px){.people .av,.people .plus,.people .more{width:31px;height:31px;font-size:12px}.people .plus{margin-left:4px}}
+/* cocher en avance */
+.check.soon:not([aria-pressed="true"]){border-style:dashed}

@@ -56,6 +56,46 @@ function toggleTask(id){
   put('tasks', t); render();
   if (!st.done && typeof celebrate === 'function') celebrate(who, today);
 }
+/* ---------- cocher en avance ----------
+   Tâches à jours fixes / mensuelles : la case du jour prévu est cochée d'avance (elle apparaîtra « faite » ce jour-là).
+   Tâches « après un délai » ou « une seule fois » : faites aujourd'hui, la prochaine échéance repart de là. */
+const earlyByDate = t => t.rec && (t.rec.type === 'weekly' || t.rec.type === 'monthly');
+const doneOn = (t, ds) => earlyByDate(t) && !!(t.done && t.done[ds]);
+function toggleTaskOn(id, ds){
+  const today = localToday();
+  if (ds === today || !earlyByDate(S.tasks.get(id) || {})) {
+    const before = S.tasks.get(id) && todayStatus(S.tasks.get(id), today).done;
+    toggleTask(id);
+    if (ds !== today && !before) setTimeout(() => toast('Faite en avance : la prochaine fois est recalculée à partir d’aujourd’hui.'), 60);
+    return;
+  }
+  const t = clone(S.tasks.get(id)); if (!t) return;
+  t.done = t.done || {};
+  const a = assigneesOn(t, ds);
+  const kidOwner = a.length === 1 && (S.members.get(a[0]) || {}).kid;
+  const who = (S.me && a.includes(S.me)) ? S.me : kidOwner ? a[0] : (S.me || a[0] || null);
+  if (t.done[ds]) {
+    const prev = t.done[ds]; delete t.done[ds];
+    const keys = Object.keys(t.done).sort(); t.lastDone = keys.at(-1) || null; t.lastBy = t.lastDone ? t.done[t.lastDone] : null;
+    if (typeof removeTaskPoints === 'function') removeTaskPoints(prev, t, ds);
+    if (typeof doneCredit === 'function' && prev) doneCredit(prev, -1);
+    put('tasks', t); render(); toast('Case décochée');
+  } else {
+    t.done[ds] = who || 'x';
+    if (!t.lastDone || ds > t.lastDone) { t.lastDone = ds; t.lastBy = who; }
+    if (who && typeof addTaskPoints === 'function') addTaskPoints(who, t, ds);
+    if (who && typeof doneCredit === 'function') doneCredit(who, 1);
+    put('tasks', t); render();
+    setTimeout(() => toast(`Faite en avance pour ${fmt(ds, {weekday:'long'})} : elle apparaîtra déjà cochée ce jour-là.`), 60);
+  }
+}
+function earlyRow(t, r, ds, today, opts={}){
+  const done = doneOn(t, ds), a = done ? [t.done[ds]].filter(id => S.members.has(id)) : assigneesOn(t, ds);
+  return `<div class="task early ${done?'done':''}">
+    <button class="check" data-act="toggleOn" data-id="${t.id}" data-day="${ds}" aria-pressed="${done}" aria-label="${done?'Décocher':'Cocher en avance'} ${esc(t.name)}">${checkIc()}</button>
+    <div class="body" data-act="editTask" data-id="${t.id}" role="button" tabindex="0"><span class="name">${esc(t.name)}</span><span class="meta">${done ? 'Faite en avance' + (a[0] ? ' par ' + esc(nameOf(a[0])) : '') : esc(r.name) + (opts.freq && !isRoutine(t.rec) ? ' · ' + esc(recLabel(t.rec)) : '')}</span></div>
+    ${avatars(a)}</div>`;
+}
 function whoAmICard(){
   if (S.me) return '';
   return `<div class="card"><h3>Qui utilise ce téléphone ?</h3><div class="chips">${sorted(S.members).map(m=>`<button class="chip" data-act="me" data-id="${m.id}">${avatar(m.id)}${esc(m.name)}</button>`).join('')}</div>
@@ -103,6 +143,11 @@ function maisonToday(){
   if (late.length) h += `<section class="group late"><div class="ghead"><h3>En retard</h3><span class="pill late num">${late.length}</span></div>${late.map(x => taskRow(x, today)).join('')}</section>`;
   h += `<section class="group">${list.length ? list.map(x => taskRow(x, today)).join('') : `<div class="task"><span class="muted">${S.filter==='me' ? 'Aucune tâche à ton nom aujourd’hui.' : 'Rien de prévu aujourd’hui. Profitez-en.'}</span></div>`}</section>`;
   h += `<div class="u-home"><button class="addline" data-act="newTask">${icon('plus',20)}Ajouter une tâche</button></div>`;
+  const tmr = addDays(today, 1);
+  const next = sorted(S.rooms).flatMap(r => [...S.tasks.values()].filter(t => t.roomId === r.id && onDay(t, tmr, today)).sort((a,b)=>(a.order??0)-(b.order??0)).map(t => ({t, r})))
+    .filter(x => S.filter !== 'me' || !S.me || assigneesOn(x.t, tmr).includes(S.me) || !assigneesOn(x.t, tmr).length);
+  if (next.length) h += `<section class="group u-home"><div class="ghead"><div style="flex:1"><h3>Demain</h3><span class="muted small">Déjà fait ? Coche-le en avance.</span></div><span class="pill num">${next.filter(x => doneOn(x.t, tmr)).length}/${next.length}</span></div>
+    ${next.map(x => earlyRow(x.t, x.r, tmr, today)).join('')}</section>`;
   h += `<div class="card u-home"><button class="chead" data-act="maisonWeek"><span class="bubble soft">${icon('calendar-days',20)}</span><h3>Routine de la semaine</h3><span class="spacer"></span><span class="go">${icon('chevron-right',20)}</span></button>${weekDots()}</div>`;
   return h;
 }
@@ -117,7 +162,7 @@ function maisonWeek(){
     const roomNames = [...new Set(lines.map(l=>l.r.name))];
     h += `<section class="group"><div class="ghead"><div style="flex:1"><h3>${esc(cap(fmt(ds,{weekday:'long', day:'numeric', month:'long'})))}</h3>
       <span class="muted small">${i===0?'Aujourd’hui · ':''}${lines.length} ${lines.length>1?'tâches':'tâche'}${roomNames.length?' · '+esc(roomNames.join(', ')):''}</span></div></div>
-      ${lines.map(l => { const a = assigneesOn(l.t, ds); return `<div class="task" data-act="editTask" data-id="${l.t.id}" role="button" tabindex="0"><div class="body"><span class="name">${esc(l.t.name)}</span><span class="meta">${esc(l.r.name)}${isRoutine(l.t.rec)?'':' · '+esc(recLabel(l.t.rec))}</span></div>${avatars(a)}${l.t.time&&l.t.time.at?`<span class="when">${esc(timeLabel(l.t.time))}</span>`:''}</div>`; }).join('') || '<div class="task"><span class="muted">Journée libre</span></div>'}
+      ${lines.map(l => i === 0 ? taskRow({t:l.t, r:l.r, st:todayStatus(l.t, today)}, today) : earlyRow(l.t, l.r, ds, today, {freq:true})).join('') || '<div class="task"><span class="muted">Journée libre</span></div>'}
     </section>`;
   }
   return h;
@@ -153,10 +198,12 @@ function roomDetail(id){
   h += `<section class="group">${tasks.map(t => {
     const st = todayStatus(t, today);
     const a = assigneesOn(t, today);
-    const checkBtn = st.show ? `<button class="check" data-act="toggle" data-id="${t.id}" aria-pressed="${!!st.done}" aria-label="Cocher ${esc(t.name)}">${checkIc()}</button>` : `<span class="check" style="border-style:dashed;opacity:.5" aria-hidden="true"></span>`;
+    const nd = st.show ? null : (earlyByDate(t) ? nextOcc(t.rec, addDays(today, 1))[0] : addDays(today, 1));
+    const checkBtn = st.show ? `<button class="check" data-act="toggle" data-id="${t.id}" aria-pressed="${!!st.done}" aria-label="Cocher ${esc(t.name)}">${checkIc()}</button>`
+      : nd ? `<button class="check soon" data-act="toggleOn" data-id="${t.id}" data-day="${nd}" aria-pressed="${doneOn(t, nd)}" aria-label="Cocher en avance ${esc(t.name)}">${checkIc()}</button>` : `<span class="check" style="border-style:dashed;opacity:.5" aria-hidden="true"></span>`;
     return `<div class="task ${st.done?'done':''}">${checkBtn}
       <div class="body" data-act="editTask" data-id="${t.id}" role="button" tabindex="0"><span class="name">${esc(t.name)}</span>
-      <span class="meta"><span>${esc(recLabel(t.rec))}${t.time&&t.time.at?' · '+esc(timeLabel(t.time)):''}</span><span class="tag ${st.late?'late':''}">${st.late?'En retard':esc(nextLabel(t,today))}</span></span>${t.note?`<span class="meta">${esc(t.note)}</span>`:''}</div>${avatars(a)}</div>`;
+      <span class="meta"><span>${esc(recLabel(t.rec))}${t.time&&t.time.at?' · '+esc(timeLabel(t.time)):''}</span><span class="tag ${st.late?'late':''}">${st.late?'En retard':nd && doneOn(t, nd)?'Faite en avance':esc(nextLabel(t,today))}</span></span>${t.note?`<span class="meta">${esc(t.note)}</span>`:''}</div>${avatars(a)}</div>`;
   }).join('') || '<div class="task"><span class="muted">Aucune tâche dans cette pièce.</span></div>'}</section>`;
   h += `<div class="u-home"><button class="addline" data-act="newTask" data-room="${id}">${icon('plus',20)}Ajouter une tâche</button></div>`;
   return h;
@@ -300,6 +347,7 @@ Object.assign(H, {
   filter: el => { S.filter = el.dataset.v; LS.set('cotribu-filter', S.filter); render(); },
   openRoom: el => goSub(() => { S.roomOpen = el.dataset.id; }),
   toggle: el => toggleTask(el.dataset.id),
+  toggleOn: el => toggleTaskOn(el.dataset.id, el.dataset.day),
   editTask: el => { const t = S.tasks.get(el.dataset.id); if (!t) return; S.draft = draftFromTask(t); openSheet('task'); },
   newTask: el => { if (!S.rooms.size) { toast('Crée d’abord une pièce.'); return; } S.draft = draftFromTask(null, el.dataset.room); openSheet('task'); },
   rtype: el => { S.draft.rtype = el.dataset.v; renderSheet(); },
